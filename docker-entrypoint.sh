@@ -9,6 +9,13 @@ echo "Starting Sekuritas Demo API..."
 
 cd /var/www/html
 
+# Railway menyuntikkan $PORT — pastikan nginx mendengarkan di port tsb.
+# Jika $PORT tidak ada, tetap pakai 80 (sesuai EXPOSE di Dockerfile).
+if [ -n "$PORT" ]; then
+    echo "Configuring nginx to listen on port $PORT..."
+    sed -i "s/listen 80;/listen ${PORT};/" /etc/nginx/nginx.conf
+fi
+
 # Copy .env jika belum ada
 if [ ! -f .env ]; then
     cp .env.example .env
