@@ -50,11 +50,19 @@ while [ "$i" -le 15 ]; do
 done
 
 if [ "$DB_READY" = "1" ]; then
-    # Seed database jika tabel users kosong
-    USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null || echo "0")
-    if [ "$USER_COUNT" = "0" ]; then
+    # Seed database jika belum ada data (cek tabel users & mutual_funds).
+    # Ambil hanya angka terakhir dari output tinker agar tahan terhadap
+    # banner/warning/deprecation yang kadang ikut tercetak (penyebab cek lama gagal).
+    USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | grep -oE '[0-9]+' | tail -n1)
+    FUND_COUNT=$(php artisan tinker --execute="echo \App\Models\MutualFund::count();" 2>/dev/null | grep -oE '[0-9]+' | tail -n1)
+    USER_COUNT=${USER_COUNT:-0}
+    FUND_COUNT=${FUND_COUNT:-0}
+    echo "Data saat ini: users=$USER_COUNT, mutual_funds=$FUND_COUNT"
+    if [ "$USER_COUNT" = "0" ] || [ "$FUND_COUNT" = "0" ]; then
         echo "Seeding database..."
         php artisan db:seed --force || echo "WARNING: seeding gagal, lanjut."
+    else
+        echo "Database sudah berisi data — lewati seeding."
     fi
 else
     echo "WARNING: database tidak terjangkau — web server tetap start."
