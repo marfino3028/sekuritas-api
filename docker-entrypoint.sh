@@ -33,15 +33,32 @@ if [ -z "$(grep '^JWT_SECRET=' .env | grep -v 'JWT_SECRET=$')" ]; then
     php artisan jwt:secret --force
 fi
 
-# Jalankan migrasi database
+# Jalankan migrasi database — tunggu DB siap dulu (maks ~30 detik).
+# NON-FATAL: kalau DB tidak terjangkau, web server tetap start agar /api/health hidup.
 echo "Running database migrations..."
-php artisan migrate --force
+DB_READY=0
+i=1
+while [ "$i" -le 15 ]; do
+    if php artisan migrate --force 2>/dev/null; then
+        DB_READY=1
+        echo "Migrations applied."
+        break
+    fi
+    echo "Database not ready (attempt $i/15), retrying in 2s..."
+    sleep 2
+    i=$((i + 1))
+done
 
-# Seed database jika tabel users kosong
-USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null || echo "0")
-if [ "$USER_COUNT" = "0" ]; then
-    echo "Seeding database..."
-    php artisan db:seed --force
+if [ "$DB_READY" = "1" ]; then
+    # Seed database jika tabel users kosong
+    USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null || echo "0")
+    if [ "$USER_COUNT" = "0" ]; then
+        echo "Seeding database..."
+        php artisan db:seed --force || echo "WARNING: seeding gagal, lanjut."
+    fi
+else
+    echo "WARNING: database tidak terjangkau — web server tetap start."
+    echo "         Set env DB_* di Railway + tambahkan service MySQL, lalu redeploy."
 fi
 
 # Buat symlink storage
