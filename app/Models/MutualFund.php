@@ -31,12 +31,26 @@ class MutualFund extends Model
         self::TYPE_SHARIA       => 'Syariah',
     ];
 
+    /**
+     * Label profil risiko produk (skala 1 Rendah s/d 5 Tinggi).
+     */
+    const RISK_LABELS = [
+        1 => 'Rendah',
+        2 => 'Menengah - Rendah',
+        3 => 'Menengah',
+        4 => 'Menengah - Tinggi',
+        5 => 'Tinggi',
+    ];
+
+    protected $appends = ['fund_type_label', 'risk_label'];
+
     protected $fillable = [
         'fund_code',
         'name',
         'investment_manager',
         'custodian_bank',
         'fund_type',
+        'risk_level',
         'nav_per_unit',
         'nav_date',
         'min_subscription',
@@ -55,6 +69,7 @@ class MutualFund extends Model
 
     protected $casts = [
         'nav_date'            => 'date',
+        'risk_level'          => 'integer',
         'nav_per_unit'        => 'decimal:4',
         'min_subscription'    => 'decimal:2',
         'min_redemption_unit' => 'decimal:8',
@@ -125,6 +140,14 @@ class MutualFund extends Model
         return $query->where('is_syariah', $isSyariah);
     }
 
+    /**
+     * Filter berdasarkan profil risiko (1..5).
+     */
+    public function scopeOfRisk($query, int $level)
+    {
+        return $query->where('risk_level', $level);
+    }
+
     // ============================================
     // Accessors
     // ============================================
@@ -135,6 +158,14 @@ class MutualFund extends Model
     public function getFundTypeLabelAttribute(): string
     {
         return self::TYPE_LABELS[$this->fund_type] ?? $this->fund_type;
+    }
+
+    /**
+     * Label profil risiko dalam Bahasa Indonesia.
+     */
+    public function getRiskLabelAttribute(): string
+    {
+        return self::RISK_LABELS[$this->risk_level] ?? 'Menengah';
     }
 
     /**

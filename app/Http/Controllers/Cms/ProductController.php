@@ -89,6 +89,7 @@ class ProductController extends Controller
             'investment_manager' => 'required|string|max:200',
             'custodian_bank'     => 'required|string|max:200',
             'fund_type'          => 'required|in:money_market,fixed_income,balanced,equity,sharia',
+            'risk_level'         => 'nullable|integer|min:1|max:5',
             'nav_per_unit'       => 'required|numeric|min:0.01',
             'nav_date'           => 'required|date',
             'min_subscription'   => 'required|numeric|min:10000',
@@ -146,6 +147,7 @@ class ProductController extends Controller
             'investment_manager' => 'string|max:200',
             'custodian_bank'     => 'string|max:200',
             'fund_type'          => 'in:money_market,fixed_income,balanced,equity,sharia',
+            'risk_level'         => 'nullable|integer|min:1|max:5',
             'nav_per_unit'       => 'numeric|min:0.01',
             'nav_date'           => 'date',
             'min_subscription'   => 'numeric|min:10000',
@@ -173,7 +175,7 @@ class ProductController extends Controller
         $oldNav = (float) $fund->nav_per_unit;
         $fund->update($request->only([
             'fund_code', 'name', 'investment_manager', 'custodian_bank',
-            'fund_type', 'nav_per_unit', 'nav_date', 'min_subscription',
+            'fund_type', 'risk_level', 'nav_per_unit', 'nav_date', 'min_subscription',
             'min_redemption_unit', 'management_fee', 'subscription_fee',
             'redemption_fee', 'total_aum', 'performance_1yr', 'performance_3yr',
             'performance_ytd', 'is_syariah', 'is_active', 'description',

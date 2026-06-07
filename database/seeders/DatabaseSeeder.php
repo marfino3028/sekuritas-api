@@ -252,6 +252,7 @@ class DatabaseSeeder extends Seeder
                 'investment_manager' => 'PT Manulife Aset Manajemen Indonesia',
                 'custodian_bank'     => 'Bank CIMB Niaga',
                 'fund_type'          => MutualFund::TYPE_SHARIA,
+                'risk_level'         => 5,
                 'nav_per_unit'       => 2876.43,
                 'nav_date'           => Carbon::today()->subDay(),
                 'min_subscription'   => 100000,
@@ -274,6 +275,7 @@ class DatabaseSeeder extends Seeder
                 'investment_manager' => 'PT CIMB-Principal Asset Management',
                 'custodian_bank'     => 'Bank BCA Syariah',
                 'fund_type'          => MutualFund::TYPE_SHARIA,
+                'risk_level'         => 1,
                 'nav_per_unit'       => 1198.56,
                 'nav_date'           => Carbon::today()->subDay(),
                 'min_subscription'   => 100000,
@@ -314,9 +316,21 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
+        $riskByType = [
+            MutualFund::TYPE_MONEY_MARKET => 1,
+            MutualFund::TYPE_FIXED_INCOME => 2,
+            MutualFund::TYPE_BALANCED     => 3,
+            MutualFund::TYPE_EQUITY       => 5,
+            MutualFund::TYPE_SHARIA       => 3,
+        ];
+
         foreach ($products as $productData) {
             $baseNav = $productData['base_nav'];
             unset($productData['base_nav']);
+
+            // Profil risiko: nilai eksplisit bila ada, jika tidak derive dari jenis
+            $productData['risk_level'] = $productData['risk_level']
+                ?? ($riskByType[$productData['fund_type']] ?? 3);
 
             $fund = MutualFund::firstOrCreate(
                 ['fund_code' => $productData['fund_code']],

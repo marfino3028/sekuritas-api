@@ -49,6 +49,7 @@ Route::prefix('auth')->group(function () {
 // ============================================================
 Route::prefix('products')->group(function () {
     Route::get('/',                [ProductController::class, 'index']);
+    Route::get('/managers',        [ProductController::class, 'managers']); // sebelum /{id}
     Route::get('/{id}',            [ProductController::class, 'show']);
     Route::get('/{id}/nav-history',[ProductController::class, 'navHistory']);
 });

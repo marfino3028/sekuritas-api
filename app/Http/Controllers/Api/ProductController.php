@@ -41,6 +41,16 @@ class ProductController extends Controller
             $query->syariah((bool) $request->is_syariah);
         }
 
+        // Filter berdasarkan profil risiko (1..5)
+        if ($request->filled('risk')) {
+            $query->ofRisk((int) $request->risk);
+        }
+
+        // Filter berdasarkan Manajer Investasi
+        if ($request->filled('manager')) {
+            $query->where('investment_manager', $request->manager);
+        }
+
         // Filter berdasarkan keyword nama/MI
         if ($request->filled('search')) {
             $keyword = $request->search;
@@ -77,6 +87,31 @@ class ProductController extends Controller
                 'per_page'     => $funds->perPage(),
                 'total'        => $funds->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Daftar Manajer Investasi beserta total AUM yang dikelola saat ini.
+     * Publik — untuk halaman / section "Manajer Investasi".
+     *
+     * @return JsonResponse
+     */
+    public function managers(): JsonResponse
+    {
+        $managers = MutualFund::active()
+            ->selectRaw('investment_manager,
+                COUNT(*) as fund_count,
+                SUM(total_aum) as total_aum,
+                ROUND(AVG(performance_1yr), 2) as avg_performance_1yr,
+                MIN(risk_level) as min_risk_level,
+                MAX(risk_level) as max_risk_level')
+            ->groupBy('investment_manager')
+            ->orderByDesc('total_aum')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $managers,
         ]);
     }
 
