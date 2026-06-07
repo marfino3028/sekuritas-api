@@ -79,7 +79,7 @@ class UpdateDailyNavCommand extends Command
                     $totalAum      = round($totalUnits * $nav, 2);
                     $investorCount = Portfolio::where('fund_id', $fund->id)->where('total_units', '>', 0)->count();
 
-                    $fund->update(['total_aum' => $totalAum]);
+                    $fund->update(['platform_aum' => $totalAum]);
 
                     AumHistory::updateOrCreate(
                         ['fund_id' => $fund->id, 'aum_date' => $date],

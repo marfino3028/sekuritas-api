@@ -291,7 +291,7 @@ class ProductController extends Controller
                                 ->where('total_units', '>', 0)
                                 ->count();
 
-            $fund->update(['total_aum' => $totalAum]);
+            $fund->update(['platform_aum' => $totalAum]);
 
             // 4. Catat ke riwayat AUM harian
             AumHistory::updateOrCreate(
@@ -377,7 +377,7 @@ class ProductController extends Controller
                     $totalAum      = round($totalUnits * $newNav, 2);
                     $investorCount = Portfolio::where('fund_id', $fund->id)->where('total_units', '>', 0)->count();
 
-                    $fund->update(['total_aum' => $totalAum]);
+                    $fund->update(['platform_aum' => $totalAum]);
 
                     AumHistory::updateOrCreate(
                         ['fund_id' => $fund->id, 'aum_date' => $navDate],
