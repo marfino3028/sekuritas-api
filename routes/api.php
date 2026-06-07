@@ -8,7 +8,9 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RiskProfileController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Cms\AuthController as CmsAuthController;
+use App\Http\Controllers\Cms\ArticleController as CmsArticleController;
 use App\Http\Controllers\Cms\EventController as CmsEventController;
 use App\Http\Controllers\Cms\KycController as CmsKycController;
 use App\Http\Controllers\Cms\ProductController as CmsProductController;
@@ -66,6 +68,14 @@ Route::prefix('events')->group(function () {
     Route::get('/',                        [EventController::class, 'index']);
     Route::get('/{code}',                  [EventController::class, 'findByCode']);
     Route::get('/{code}/leaderboard',      [EventController::class, 'leaderboard']);
+});
+
+// ============================================================
+// ARTIKEL & BERITA — Publik
+// ============================================================
+Route::prefix('articles')->group(function () {
+    Route::get('/',        [ArticleController::class, 'index']);
+    Route::get('/{slug}',  [ArticleController::class, 'show']);
 });
 
 // ============================================================
@@ -188,5 +198,17 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
         Route::put('/{id}/toggle',         [CmsEventController::class, 'toggle']);
         Route::get('/{id}/leaderboard',    [CmsEventController::class, 'leaderboard']);
         Route::get('/{id}/export',         [CmsEventController::class, 'export']);
+    });
+
+    // --------------------------------------------------------
+    // Article Management (CRUD + publish toggle)
+    // --------------------------------------------------------
+    Route::prefix('articles')->group(function () {
+        Route::get('/',            [CmsArticleController::class, 'index']);
+        Route::post('/',           [CmsArticleController::class, 'store']);
+        Route::get('/{id}',        [CmsArticleController::class, 'show']);
+        Route::put('/{id}',        [CmsArticleController::class, 'update']);
+        Route::delete('/{id}',     [CmsArticleController::class, 'destroy']);
+        Route::put('/{id}/toggle', [CmsArticleController::class, 'toggle']);
     });
 });
