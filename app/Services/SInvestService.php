@@ -31,6 +31,10 @@ class SInvestService
      * @return array Data SID yang berhasil di-generate
      * @throws \Exception Jika user tidak ditemukan atau sudah memiliki SID aktif
      */
+    public function __construct(
+        private \App\Services\SInvest\SInvestManager $manager = new \App\Services\SInvest\SInvestManager(),
+    ) {}
+
     public function generateSid(int $userId): array
     {
         $user = User::findOrFail($userId);
@@ -43,64 +47,45 @@ class SInvestService
         // Update status ke 'processing' dahulu
         $user->update(['sid_status' => User::SID_PROCESSING]);
 
-        // Simulasi latency API S-INVEST (1-2 detik)
-        $delayMs = rand(1000000, 2000000); // microseconds
-        usleep($delayMs);
-
-        // Generate nomor SID unik: format SIDXXXXXXXX (8 digit angka)
-        $sidNumber  = 'SID' . str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
-        $ifuaNumber = 'IFUA' . str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
-
-        // Pastikan unik di database
-        while (SidData::where('sid_number', $sidNumber)->exists()) {
-            $sidNumber = 'SID' . str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
-        }
-        while (SidData::where('ifua_number', $ifuaNumber)->exists()) {
-            $ifuaNumber = 'IFUA' . str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
+        try {
+            // Delegasikan penerbitan ke provider aktif (mock/ksei) — adapter pattern
+            $result = $this->manager->provider()->registerInvestor($user);
+        } catch (\Throwable $e) {
+            // Kembalikan status agar tidak terkunci di 'processing'
+            $user->update(['sid_status' => User::SID_NOT_GENERATED]);
+            throw $e;
         }
 
-        // Simulasi response dari S-INVEST API
-        $mockSInvestResponse = [
-            'status'           => 'SUCCESS',
-            'participant_code' => config('sinvest.participant_code', 'SEK001'),
-            'sid_number'       => $sidNumber,
-            'ifua_number'      => $ifuaNumber,
-            'investor_name'    => $user->name,
-            'investor_email'   => $user->email,
-            'registered_at'    => Carbon::now()->toIso8601String(),
-            'message'          => 'SID berhasil diterbitkan',
-            // Metadata mock
-            'mock'             => true,
-            'generated_by'     => 'SInvestService@demo',
-        ];
+        $sidNumber  = $result['sid_number'];
+        $ifuaNumber = $result['ifua_number'];
 
         // Simpan ke tabel sid_data
         $sidData = SidData::create([
             'user_id'           => $userId,
             'sid_number'        => $sidNumber,
             'ifua_number'       => $ifuaNumber,
-            's_invest_response' => $mockSInvestResponse,
+            's_invest_response' => $result['raw'],
             'generated_at'      => Carbon::now(),
         ]);
 
         // Update user: aktifkan SID
         $user->update([
-            'sid_status' => User::SID_ACTIVE,
-            'sid_number' => $sidNumber,
-            'ifua_number'=> $ifuaNumber,
-            'status'     => User::STATUS_ACTIVE,
+            'sid_status'  => User::SID_ACTIVE,
+            'sid_number'  => $sidNumber,
+            'ifua_number' => $ifuaNumber,
+            'status'      => User::STATUS_ACTIVE,
         ]);
 
-        Log::info("[SInvest Mock] SID berhasil di-generate", [
+        Log::info('[SInvest] SID diterbitkan', [
+            'driver'     => config('sinvest.driver', 'mock'),
             'user_id'    => $userId,
             'sid_number' => $sidNumber,
-            'ifua_number'=> $ifuaNumber,
         ]);
 
         return [
             'sid_number'        => $sidNumber,
             'ifua_number'       => $ifuaNumber,
-            's_invest_response' => $mockSInvestResponse,
+            's_invest_response' => $result['raw'],
             'generated_at'      => $sidData->generated_at,
         ];
     }
