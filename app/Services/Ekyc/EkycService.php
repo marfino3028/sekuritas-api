@@ -215,7 +215,7 @@ class EkycService
             array_filter([
                 'nik'               => $doc->nik,
                 'birth_date'        => $doc->birth_date,
-                'gender'            => $doc->gender ? strtoupper(substr($doc->gender, 0, 1)) : null,
+                'gender'            => $this->normalizeGender($doc->gender),
                 'address'           => $doc->address,
                 'ktp_photo_path'    => $doc->image_path,
                 'selfie_photo_path' => $session->selfie?->image_path,
@@ -223,6 +223,16 @@ class EkycService
                 'submitted_at'      => Carbon::now(),
             ], fn ($v) => $v !== null)
         );
+    }
+
+    /** Normalisasi gender OCR (LAKI-LAKI/PEREMPUAN/M/F) → 'M' | 'F' | null. */
+    private function normalizeGender(?string $g): ?string
+    {
+        if (! $g) return null;
+        $u = strtoupper($g);
+        if (str_contains($u, 'PEREMPUAN') || $u === 'F' || $u === 'P') return 'F';
+        if (str_contains($u, 'LAKI') || $u === 'M' || $u === 'L') return 'M';
+        return null;
     }
 
     /** Deteksi red-flag dasar untuk anti-fraud. */
