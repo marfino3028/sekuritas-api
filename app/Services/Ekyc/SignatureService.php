@@ -2,6 +2,8 @@
 
 namespace App\Services\Ekyc;
 
+use App\Services\Ekyc\EkycFileStore;
+
 use App\Models\EkycSession;
 use App\Models\EkycSignature;
 use Carbon\Carbon;
@@ -27,7 +29,7 @@ class SignatureService
         $binary = $this->decodeDataUri($base64Png);
         $path   = "ekyc/{$session->user_id}/signatures/" . Str::uuid() . '.png';
 
-        Storage::disk(config('ekyc.storage_disk', 'public'))->put($path, $binary);
+        EkycFileStore::putRaw($path, $binary);
 
         return EkycSignature::updateOrCreate(
             ['session_id' => $session->id],

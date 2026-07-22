@@ -12,8 +12,12 @@ return [
     */
     'provider' => env('EKYC_PROVIDER', 'stub'),
 
-    // Disk penyimpanan gambar KTP/selfie (sebaiknya s3/minio + terenkripsi di prod)
+    // Disk penyimpanan gambar KTP/selfie (sebaiknya s3/minio di prod)
     'storage_disk' => env('EKYC_STORAGE_DISK', 'public'),
+
+    // Enkripsi isi file KTP/selfie/tanda tangan at-rest (AES-256 via Laravel Crypt).
+    // Aktifkan di produksi; sajikan file lewat endpoint terproteksi (bukan URL publik).
+    'encrypt_files' => (bool) env('EKYC_ENCRYPT_FILES', false),
 
     // Masa berlaku 1 sesi eKYC (menit) sebelum expired
     'session_ttl' => (int) env('EKYC_SESSION_TTL', 60),

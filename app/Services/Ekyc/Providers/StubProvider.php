@@ -6,7 +6,7 @@ use App\Services\Ekyc\Contracts\EkycProvider;
 use App\Services\Ekyc\DTO\FaceMatchResult;
 use App\Services\Ekyc\DTO\LivenessResult;
 use App\Services\Ekyc\DTO\OcrResult;
-use Illuminate\Support\Facades\Storage;
+use App\Services\Ekyc\EkycFileStore;
 
 /**
  * StubProvider — provider eKYC self-hosted "nol biaya" untuk tahap awal/demo.
@@ -85,13 +85,11 @@ class StubProvider implements EkycProvider
      */
     private function inspect(string $path): array
     {
-        $disk = config('ekyc.storage_disk', 'public');
-        if (! Storage::disk($disk)->exists($path)) {
+        $content = EkycFileStore::get($path);
+        if ($content === '') {
             return [0, sha1($path)];
         }
-        $size    = Storage::disk($disk)->size($path);
-        $content = Storage::disk($disk)->get($path);
 
-        return [$size, sha1($content)];
+        return [strlen($content), sha1($content)];
     }
 }

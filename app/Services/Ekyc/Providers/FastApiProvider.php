@@ -35,7 +35,7 @@ class FastApiProvider implements EkycProvider
 
     private function contents(string $path): string
     {
-        return Storage::disk(config('ekyc.storage_disk', 'public'))->get($path);
+        return \App\Services\Ekyc\EkycFileStore::get($path);
     }
 
     public function ocr(string $imagePath): OcrResult

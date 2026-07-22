@@ -282,14 +282,14 @@ class EkycService
         ]);
     }
 
-    /** Simpan file upload ke disk eKYC, kembalikan path relatif. */
+    /** Simpan file upload ke disk eKYC (terenkripsi bila diaktifkan), kembalikan path. */
     public function storeUpload(int $userId, $file, string $kind): string
     {
-        return $file->store("ekyc/{$userId}/{$kind}", config('ekyc.storage_disk', 'public'));
+        return EkycFileStore::put($userId, $file, $kind);
     }
 
     public function url(?string $path): ?string
     {
-        return $path ? Storage::disk(config('ekyc.storage_disk', 'public'))->url($path) : null;
+        return EkycFileStore::url($path);
     }
 }
