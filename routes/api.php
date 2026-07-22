@@ -114,6 +114,7 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('/ocr',        [EkycController::class, 'ocr']);
         Route::post('/liveness',   [EkycController::class, 'liveness']);
         Route::post('/face-match', [EkycController::class, 'faceMatch']);
+        Route::post('/verify-nik', [EkycController::class, 'verifyNik']);
         Route::post('/signature',  [EkycController::class, 'sign']);
         Route::post('/verify',     [EkycController::class, 'verify']);
         Route::get('/status/{id}', [EkycController::class, 'status']);

@@ -171,6 +171,26 @@ class EkycController extends Controller
         ]);
     }
 
+    /** Verifikasi NIK (dari OCR) ke Dukcapil (mock/asli). */
+    public function verifyNik(Request $request): JsonResponse
+    {
+        $v = Validator::make($request->all(), ['session_id' => 'required|uuid']);
+        if ($v->fails()) return $this->fail($v);
+
+        $session = $this->resolveSession($request->input('session_id'), JWTAuth::user()->id);
+        if (! $session) return $this->notFound();
+
+        $doc = $session->document;
+        if (! $doc || ! $doc->nik) {
+            return response()->json(['success' => false, 'message' => 'NIK belum terbaca dari KTP.'], 400);
+        }
+
+        $result = app(\App\Services\Dukcapil\DukcapilService::class)
+            ->verify($doc->nik, $doc->name, $doc->birth_date?->toDateString());
+
+        return $this->ok('Verifikasi NIK selesai.', ['dukcapil' => $result]);
+    }
+
     /** Status & detail sesi. */
     public function status(string $id): JsonResponse
     {
