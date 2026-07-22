@@ -1,4 +1,4 @@
-@php $blue = '#1E56C9'; @endphp
+@php $blue = '#4F46E5'; @endphp
 <x-mail-layout title="Lengkapi Akun — Victoria Sekuritas">
     <p style="margin:0 0 16px;">Kepada Nasabah Yang Terhormat / <em>Dear Valued Customer</em>,</p>
 

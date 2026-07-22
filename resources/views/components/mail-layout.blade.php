@@ -1,7 +1,7 @@
 @props(['title' => 'Victoria Sekuritas'])
 @php
     // Palet brand Victoria Sekuritas (lihat ANALISA_DAN_DESIGN.md)
-    $navy = '#0B2A5B'; $blue = '#1E56C9'; $gold = '#F5B301'; $slate = '#F5F7FB';
+    $navy = '#312E81'; $blue = '#4F46E5'; $gold = '#8B5CF6'; $slate = '#F5F7FB';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -15,7 +15,7 @@
         <tr><td align="center">
             <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(11,42,91,.08);">
                 <tr>
-                    <td style="background:linear-gradient(135deg,#0A1F44 0%,{{ $navy }} 55%,{{ $blue }} 100%);padding:28px 32px;">
+                    <td style="background:linear-gradient(135deg,#1E1B4B 0%,{{ $navy }} 55%,{{ $blue }} 100%);padding:28px 32px;">
                         <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:.3px;">Victoria Sekuritas</span>
                         <span style="display:inline-block;width:8px;height:8px;background:{{ $gold }};border-radius:50%;margin-left:6px;"></span>
                     </td>
