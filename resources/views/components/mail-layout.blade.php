@@ -1,7 +1,7 @@
 @props(['title' => 'Victoria Sekuritas'])
 @php
     // Palet brand Victoria Sekuritas (lihat ANALISA_DAN_DESIGN.md)
-    $navy = '#312E81'; $blue = '#4F46E5'; $gold = '#8B5CF6'; $slate = '#F5F7FB';
+    $navy = '#7D0001'; $blue = '#A40001'; $gold = '#C67177'; $slate = '#F5F7FB';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -13,9 +13,9 @@
 <body style="margin:0;padding:0;background:{{ $slate }};font-family:Helvetica,Arial,sans-serif;color:#1f2937;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{{ $slate }};padding:24px 0;">
         <tr><td align="center">
-            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(11,42,91,.08);">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(164,0,1,.08);">
                 <tr>
-                    <td style="background:linear-gradient(135deg,#1E1B4B 0%,{{ $navy }} 55%,{{ $blue }} 100%);padding:28px 32px;">
+                    <td style="background:linear-gradient(135deg,#4A0000 0%,{{ $navy }} 55%,{{ $blue }} 100%);padding:28px 32px;">
                         <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:.3px;">Victoria Sekuritas</span>
                         <span style="display:inline-block;width:8px;height:8px;background:{{ $gold }};border-radius:50%;margin-left:6px;"></span>
                     </td>

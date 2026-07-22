@@ -1,4 +1,4 @@
-@php $gold = '#8B5CF6'; $blue = '#4F46E5'; @endphp
+@php $gold = '#C67177'; $blue = '#A40001'; @endphp
 <x-mail-layout title="Registrasi Victoria Sekuritas">
     <p style="margin:0 0 16px;">Kepada Nasabah Yang Terhormat / <em>Dear Valued Client</em>,</p>
 
