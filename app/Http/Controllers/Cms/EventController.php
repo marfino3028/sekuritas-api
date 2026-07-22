@@ -156,6 +156,36 @@ class EventController extends Controller
     }
 
     /**
+     * Upload banner event (gambar). Disimpan di disk public: events/{id}/.
+     * POST /api/cms/events/{id}/banner  (multipart: banner)
+     */
+    public function uploadBanner(Request $request, int $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'banner' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [
+            'banner.mimes' => 'Format banner harus JPG, PNG, atau WEBP.',
+            'banner.max'   => 'Ukuran banner maksimal 4MB.',
+        ]);
+
+        // Hapus banner lama bila ada
+        if ($event->banner_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($event->banner_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($event->banner_path);
+        }
+
+        $path = $request->file('banner')->store("events/{$event->id}", 'public');
+        $event->update(['banner_path' => $path]);
+
+        return response()->json([
+            'message'     => 'Banner berhasil diunggah.',
+            'banner_path' => $path,
+            'banner_url'  => \Illuminate\Support\Facades\Storage::disk('public')->url($path),
+        ]);
+    }
+
+    /**
      * Toggle aktif/nonaktif event.
      * PUT /api/cms/events/{id}/toggle
      */

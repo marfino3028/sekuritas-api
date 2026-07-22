@@ -212,6 +212,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
         Route::put('/{id}',                [CmsEventController::class, 'update']);
         Route::delete('/{id}',             [CmsEventController::class, 'destroy']);
         Route::put('/{id}/toggle',         [CmsEventController::class, 'toggle']);
+        Route::post('/{id}/banner',        [CmsEventController::class, 'uploadBanner']);
         Route::get('/{id}/leaderboard',    [CmsEventController::class, 'leaderboard']);
         Route::get('/{id}/export',         [CmsEventController::class, 'export']);
     });
