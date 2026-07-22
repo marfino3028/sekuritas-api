@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EkycController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PortfolioController;
@@ -99,6 +100,19 @@ Route::middleware(['auth:api'])->group(function () {
         Route::get('/',        [KycController::class, 'show']);
         Route::post('/upload', [KycController::class, 'uploadDocument']);
         Route::post('/submit', [KycController::class, 'submit']);
+    });
+
+    // --------------------------------------------------------
+    // eKYC — verifikasi identitas otomatis (OCR / liveness / face match / signature)
+    // --------------------------------------------------------
+    Route::prefix('ekyc')->group(function () {
+        Route::post('/session',    [EkycController::class, 'createSession']);
+        Route::post('/ocr',        [EkycController::class, 'ocr']);
+        Route::post('/liveness',   [EkycController::class, 'liveness']);
+        Route::post('/face-match', [EkycController::class, 'faceMatch']);
+        Route::post('/signature',  [EkycController::class, 'sign']);
+        Route::post('/verify',     [EkycController::class, 'verify']);
+        Route::get('/status/{id}', [EkycController::class, 'status']);
     });
 
     // --------------------------------------------------------

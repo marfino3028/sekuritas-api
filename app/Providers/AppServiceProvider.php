@@ -21,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\PaymentService::class,
             \App\Services\PaymentService::class
         );
+
+        // Modul eKYC — manager provider (adapter pattern) & orchestrator
+        $this->app->singleton(\App\Services\Ekyc\EkycManager::class);
+        $this->app->singleton(\App\Services\Ekyc\SignatureService::class);
+        $this->app->singleton(\App\Services\Ekyc\EkycService::class);
     }
 
     /**
