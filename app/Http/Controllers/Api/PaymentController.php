@@ -18,7 +18,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  */
 class PaymentController extends Controller
 {
-    public function __construct(private PaymentService $paymentService) {}
+    public function __construct(
+        private PaymentService $paymentService,
+        private \App\Services\Payment\PaymentGatewayManager $gateways,
+    ) {}
 
     /**
      * Konfirmasi pembayaran oleh user.
@@ -75,13 +78,22 @@ class PaymentController extends Controller
      */
     public function webhook(Request $request): JsonResponse
     {
-        // Di production: verifikasi signature
-        // $signature = $request->header('X-Signature');
-        // if (!$this->verifyWebhookSignature($signature, $request->getContent())) {
-        //     return response()->json(['error' => 'Invalid signature'], 401);
-        // }
+        // Verifikasi keaslian webhook via gateway aktif (Midtrans: signature_key SHA-512).
+        $gateway = $this->gateways->gateway();
+        if (! $gateway->verifyWebhook($request)) {
+            \Illuminate\Support\Facades\Log::warning('[Payment] Webhook signature tidak valid', [
+                'gateway' => $gateway->name(),
+                'ip'      => $request->ip(),
+            ]);
+            return response()->json(['success' => false, 'message' => 'Invalid signature'], 401);
+        }
 
-        $payload = $request->all();
+        // Normalisasi payload lintas-gateway → dipetakan ke format processWebhook.
+        $parsed  = $gateway->parseWebhook($request);
+        $payload = array_merge($request->all(), [
+            'order_id' => $parsed['order_ref'],
+            'status'   => $parsed['status'],
+        ]);
 
         try {
             $result = $this->paymentService->processWebhook($payload);

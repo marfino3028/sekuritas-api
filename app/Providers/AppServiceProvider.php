@@ -22,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\PaymentService::class
         );
 
+        // Payment gateway manager (adapter: mock/midtrans/xendit)
+        $this->app->singleton(\App\Services\Payment\PaymentGatewayManager::class);
+
         // Modul eKYC — manager provider (adapter pattern) & orchestrator
         $this->app->singleton(\App\Services\Ekyc\EkycManager::class);
         $this->app->singleton(\App\Services\Ekyc\SignatureService::class);
