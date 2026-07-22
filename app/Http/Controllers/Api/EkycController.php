@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CompleteAccountMail;
+use App\Models\EkycResult;
 use App\Models\EkycSession;
 use App\Services\Ekyc\EkycService;
 use App\Services\Ekyc\SignatureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -148,6 +152,18 @@ class EkycController extends Controller
         if (! $session) return $this->notFound();
 
         $result = $this->ekyc->verify($session);
+
+        // Kirim email "Lengkapi Akun" bila verifikasi tidak ditolak (gagal email tak menggagalkan proses)
+        if ($result->decision !== EkycResult::DECISION_REJECTED) {
+            $user = JWTAuth::user();
+            if ($user->email) {
+                try {
+                    Mail::to($user->email)->send(new CompleteAccountMail());
+                } catch (\Throwable $e) {
+                    Log::warning('Gagal kirim email Lengkapi Akun: ' . $e->getMessage(), ['user_id' => $user->id]);
+                }
+            }
+        }
 
         return $this->ok('Verifikasi selesai.', [
             'session' => $this->serialize($session->fresh()),

@@ -42,6 +42,8 @@ class User extends Authenticatable implements JWTSubject
         'status',
         'email_verified_at',
         'phone_verified_at',
+        'activation_token',
+        'activated_at',
         'sid_status',
         'sid_number',
         'ifua_number',

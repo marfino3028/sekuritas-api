@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RegistrationMail;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
@@ -172,6 +176,95 @@ class AuthController extends Controller
                 'user'  => $this->formatUser($user),
             ],
         ], 201);
+    }
+
+    /**
+     * Registrasi via WEB (User ID + email + password), flow seperti CGS:
+     * daftar → kirim email link aktivasi → aktivasi → login.
+     *
+     * POST /auth/register-email
+     * body: { name?, email, password }
+     */
+    public function registerEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'nullable|string|max:120',
+            'email'    => 'required|email|max:190',
+            'password' => 'required|string|min:8',
+        ], [
+            'email.email'      => 'Format email tidak valid.',
+            'password.min'     => 'Password minimal 8 karakter.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $existing = User::where('email', $request->email)->first();
+        if ($existing && $existing->status === User::STATUS_ACTIVE) {
+            return response()->json([
+                'success' => false, 'message' => 'Email sudah terdaftar. Silakan login.',
+            ], 409);
+        }
+
+        $token = Str::random(64);
+
+        $user = User::updateOrCreate(
+            ['email' => $request->email],
+            [
+                'name'             => $request->name ?? explode('@', $request->email)[0],
+                'password'         => Hash::make($request->password),
+                'role'             => User::ROLE_USER,
+                'status'           => User::STATUS_PENDING,
+                'activation_token' => $token,
+            ]
+        );
+
+        // Kirim email aktivasi (gagal email tidak menggagalkan registrasi)
+        $activationUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/')
+            . '/aktivasi?token=' . $token;
+        try {
+            Mail::to($user->email)->send(new RegistrationMail($user->email, $activationUrl, $user->name));
+        } catch (\Throwable $e) {
+            Log::warning('Gagal kirim email aktivasi: ' . $e->getMessage(), ['email' => $user->email]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registrasi berhasil. Silakan cek email untuk link aktivasi.',
+            'data'    => ['email' => $user->email],
+        ], 201);
+    }
+
+    /**
+     * Aktivasi akun via token dari email.
+     * POST /auth/activate  body: { token }
+     */
+    public function activate(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), ['token' => 'required|string']);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Token wajib diisi.'], 422);
+        }
+
+        $user = User::where('activation_token', $request->token)->first();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Token aktivasi tidak valid atau sudah digunakan.'], 400);
+        }
+
+        $user->update([
+            'status'            => User::STATUS_ACTIVE,
+            'email_verified_at' => Carbon::now(),
+            'activated_at'      => Carbon::now(),
+            'activation_token'  => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Akun berhasil diaktivasi. Silakan login.',
+        ]);
     }
 
     /**

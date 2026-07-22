@@ -44,6 +44,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/send-otp',    [AuthController::class, 'sendOtp']);
     Route::post('/verify-otp',  [AuthController::class, 'verifyOtp']);
     Route::post('/register',    [AuthController::class, 'register']);
+    Route::post('/register-email', [AuthController::class, 'registerEmail']); // web: email + password
+    Route::post('/activate',    [AuthController::class, 'activate']);          // aktivasi via token email
     Route::post('/login',       [AuthController::class, 'login']);
 });
 
