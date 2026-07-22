@@ -48,6 +48,7 @@ Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/register-email', [AuthController::class, 'registerEmail']); // web: email + password
     Route::post('/activate',    [AuthController::class, 'activate']);          // aktivasi via token email
     Route::post('/login',       [AuthController::class, 'login']);
+    Route::post('/login-email', [AuthController::class, 'loginEmail']);        // web: email + password
 });
 
 // ============================================================

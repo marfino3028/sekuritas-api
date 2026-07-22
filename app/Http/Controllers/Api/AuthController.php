@@ -362,6 +362,49 @@ class AuthController extends Controller
     /**
      * Format data user untuk response API.
      */
+    /**
+     * Login via email + password (flow WEB, setelah aktivasi).
+     * POST /auth/login-email  body: { email, password }
+     */
+    public function loginEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json(['success' => false, 'message' => 'Email atau password salah.'], 401);
+        }
+
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['success' => false, 'message' => 'Akun Anda disuspend. Hubungi CS.'], 403);
+        }
+
+        // Belum aktivasi (klik link email) → tolak
+        if ($user->status === User::STATUS_PENDING && ! $user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun belum diaktivasi. Silakan cek email aktivasi Anda.',
+                'need_activation' => true,
+            ], 403);
+        }
+
+        $token = JWTAuth::fromUser($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login berhasil!',
+            'data'    => ['token' => $token, 'user' => $this->formatUser($user)],
+        ]);
+    }
+
     private function formatUser(User $user, bool $withDetails = false): array
     {
         $data = [
