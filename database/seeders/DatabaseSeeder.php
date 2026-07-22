@@ -26,6 +26,13 @@ class DatabaseSeeder extends Seeder
         $this->seedMutualFunds();
         $this->seedEvents();
 
+        // Data demo tambahan (artikel, nasabah + KYC/eKYC/portofolio/transaksi, leaderboard)
+        $this->call([
+            ArticleSeeder::class,
+            NasabahSeeder::class,
+            EventRegistrationSeeder::class,
+        ]);
+
         $this->command->info('Database seeder selesai!');
         $this->command->info('Login CMS: admin@sekuritas-demo.id / password: Admin@123456');
         $this->command->info('Login Ops: ops@sekuritas-demo.id / password: Ops@123456');
