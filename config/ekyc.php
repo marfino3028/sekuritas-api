@@ -12,6 +12,29 @@ return [
     */
     'provider' => env('EKYC_PROVIDER', 'stub'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Kredensial vendor komersial (untuk swap ke Sumsub/Veriff/ADVANCE.AI)
+    |--------------------------------------------------------------------------
+    | Adapter siap-pakai; isi kredensial + implementasikan pemanggilan API vendor.
+    */
+    'vendors' => [
+        'sumsub' => [
+            'app_token'  => env('SUMSUB_APP_TOKEN', ''),
+            'secret_key' => env('SUMSUB_SECRET_KEY', ''),
+            'base_url'   => env('SUMSUB_BASE_URL', 'https://api.sumsub.com'),
+        ],
+        'veriff' => [
+            'api_key'  => env('VERIFF_API_KEY', ''),
+            'base_url' => env('VERIFF_BASE_URL', 'https://stationapi.veriff.com'),
+        ],
+        'advance_ai' => [
+            'access_key' => env('ADVANCE_AI_ACCESS_KEY', ''),
+            'secret_key' => env('ADVANCE_AI_SECRET_KEY', ''),
+            'base_url'   => env('ADVANCE_AI_BASE_URL', 'https://api.advance.ai'),
+        ],
+    ],
+
     // Disk penyimpanan gambar KTP/selfie (sebaiknya s3/minio di prod)
     'storage_disk' => env('EKYC_STORAGE_DISK', 'public'),
 

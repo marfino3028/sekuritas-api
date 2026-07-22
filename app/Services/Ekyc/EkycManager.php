@@ -29,9 +29,12 @@ class EkycManager
     private function make(string $name): EkycProvider
     {
         return match ($name) {
-            'stub'    => new StubProvider(),
-            'fastapi' => new FastApiProvider(),
-            default   => throw new InvalidArgumentException("Provider eKYC tidak dikenal: {$name}"),
+            'stub'       => new StubProvider(),
+            'fastapi'    => new FastApiProvider(),
+            'sumsub'     => new \App\Services\Ekyc\Providers\SumsubProvider(),
+            'veriff'     => new \App\Services\Ekyc\Providers\VeriffProvider(),
+            'advance_ai' => new \App\Services\Ekyc\Providers\AdvanceAiProvider(),
+            default      => throw new InvalidArgumentException("Provider eKYC tidak dikenal: {$name}"),
         };
     }
 }

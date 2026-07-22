@@ -40,7 +40,8 @@ Route::get('/health', fn () => response()->json([
 // ============================================================
 // AUTH — Publik (tidak perlu token)
 // ============================================================
-Route::prefix('auth')->group(function () {
+// Rate limit ketat untuk cegah brute-force OTP/login (10 request/menit per IP).
+Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/send-otp',    [AuthController::class, 'sendOtp']);
     Route::post('/verify-otp',  [AuthController::class, 'verifyOtp']);
     Route::post('/register',    [AuthController::class, 'register']);
@@ -107,7 +108,7 @@ Route::middleware(['auth:api'])->group(function () {
     // --------------------------------------------------------
     // eKYC — verifikasi identitas otomatis (OCR / liveness / face match / signature)
     // --------------------------------------------------------
-    Route::prefix('ekyc')->group(function () {
+    Route::prefix('ekyc')->middleware('throttle:30,1')->group(function () {
         Route::post('/session',    [EkycController::class, 'createSession']);
         Route::post('/ocr',        [EkycController::class, 'ocr']);
         Route::post('/liveness',   [EkycController::class, 'liveness']);
