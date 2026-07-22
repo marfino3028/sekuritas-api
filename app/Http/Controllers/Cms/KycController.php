@@ -95,10 +95,17 @@ class KycController extends Controller
             ->latest()
             ->first();
 
+        $url = fn ($p) => $p ? \Illuminate\Support\Facades\Storage::disk('public')->url($p) : null;
+
         return response()->json([
             'success' => true,
             'data'    => array_merge($kyc->toArray(), [
                 'ekyc' => $ekyc,
+                // URL dokumen (frontend CMS memakai nama tanpa _path)
+                'ktp_photo'       => $url($kyc->ktp_photo_path),
+                'selfie_photo'    => $url($kyc->selfie_photo_path),
+                'npwp_photo'      => $url($kyc->npwp_photo_path),
+                'bank_book_photo' => $url($kyc->bank_book_photo_path),
             ]),
         ]);
     }
