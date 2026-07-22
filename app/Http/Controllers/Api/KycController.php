@@ -32,7 +32,7 @@ class KycController extends Controller
     public function uploadDocument(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:ktp,selfie,npwp,bank_book',
+            'type' => 'required|in:ktp,selfie,npwp,bank_book,signature,paraf',
             'file' => 'required|file|mimes:jpg,jpeg,png|max:5120', // max 5MB
         ], [
             'file.mimes' => 'Format file harus JPG atau PNG.',
@@ -67,6 +67,8 @@ class KycController extends Controller
             'selfie'    => 'selfie_photo_path',
             'npwp'      => 'npwp_photo_path',
             'bank_book' => 'bank_book_photo_path',
+            'signature' => 'signature_path',
+            'paraf'     => 'paraf_path',
         ];
         $kyc->update([$fieldMap[$type] => $path]);
 

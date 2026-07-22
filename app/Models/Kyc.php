@@ -38,6 +38,8 @@ class Kyc extends Model
         'selfie_photo_path',
         'npwp_photo_path',
         'bank_book_photo_path',
+        'signature_path',
+        'paraf_path',
         'employment',
         'additional_info',
         'status',
