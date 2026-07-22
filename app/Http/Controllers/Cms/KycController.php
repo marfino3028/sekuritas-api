@@ -106,6 +106,8 @@ class KycController extends Controller
                 'selfie_photo'    => $url($kyc->selfie_photo_path),
                 'npwp_photo'      => $url($kyc->npwp_photo_path),
                 'bank_book_photo' => $url($kyc->bank_book_photo_path),
+                'signature_photo' => $url($kyc->signature_path),
+                'paraf_photo'     => $url($kyc->paraf_path),
             ]),
         ]);
     }
