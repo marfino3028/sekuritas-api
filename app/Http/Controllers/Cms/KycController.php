@@ -89,9 +89,17 @@ class KycController extends Controller
     {
         $kyc = Kyc::with(['user', 'reviewer'])->findOrFail($id);
 
+        // Sertakan hasil eKYC otomatis terbaru milik nasabah (untuk review admin)
+        $ekyc = \App\Models\EkycSession::with(['document', 'selfie', 'signature', 'result'])
+            ->where('user_id', $kyc->user_id)
+            ->latest()
+            ->first();
+
         return response()->json([
             'success' => true,
-            'data'    => $kyc,
+            'data'    => array_merge($kyc->toArray(), [
+                'ekyc' => $ekyc,
+            ]),
         ]);
     }
 
