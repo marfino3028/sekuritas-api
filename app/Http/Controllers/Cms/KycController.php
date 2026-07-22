@@ -104,8 +104,10 @@ class KycController extends Controller
     }
 
     /**
-     * Setujui pengajuan KYC nasabah.
-     * Otomatis trigger generasi SID melalui SInvestService.
+     * Setujui pengajuan KYC nasabah (LANGKAH 1).
+     *
+     * Catatan: penerbitan SID DIPISAH ke langkah terpisah (issueSid) agar ops
+     * punya kontrol dua langkah — approve KYC dulu, lalu "Kirim ke S-INVEST".
      *
      * @param int $id KYC ID
      * @return JsonResponse
@@ -123,54 +125,93 @@ class KycController extends Controller
 
         $admin = JWTAuth::user();
 
-        // Update status KYC
         $kyc->update([
             'status'      => Kyc::STATUS_APPROVED,
             'reviewed_by' => $admin->id,
             'reviewed_at' => Carbon::now(),
         ]);
 
-        // Otomatis generate SID setelah KYC approved
+        Log::info("[CMS] KYC disetujui (SID belum diterbitkan)", [
+            'kyc_id'   => $kyc->id,
+            'user_id'  => $kyc->user_id,
+            'admin_id' => $admin->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "KYC nasabah {$kyc->user->name} disetujui. Lanjutkan dengan 'Kirim ke S-INVEST' untuk menerbitkan SID.",
+            'data'    => [
+                'kyc_id'      => $kyc->id,
+                'user_id'     => $kyc->user_id,
+                'user_name'   => $kyc->user->name,
+                'status'      => $kyc->status,
+                'sid_issued'  => false,
+                'approved_by' => $admin->name,
+                'approved_at' => $kyc->reviewed_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Terbitkan SID via S-INVEST (LANGKAH 2 — dipicu manual oleh ops).
+     * Hanya untuk nasabah yang KYC-nya sudah APPROVED dan SID belum aktif.
+     *
+     * POST /api/cms/kyc/{id}/issue-sid
+     *
+     * @param int $id KYC ID
+     * @return JsonResponse
+     */
+    public function issueSid(int $id): JsonResponse
+    {
+        $kyc = Kyc::with('user')->findOrFail($id);
+
+        if ($kyc->status !== Kyc::STATUS_APPROVED) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SID hanya bisa diterbitkan setelah KYC disetujui.',
+            ], 400);
+        }
+
+        if ($kyc->user->sid_status === \App\Models\User::SID_ACTIVE) {
+            return response()->json([
+                'success' => false,
+                'message' => "Nasabah sudah memiliki SID aktif: {$kyc->user->sid_number}.",
+            ], 400);
+        }
+
+        $admin = JWTAuth::user();
+
         try {
             $sidResult = $this->sInvestService->generateSid($kyc->user_id);
 
-            Log::info("[CMS] KYC disetujui dan SID berhasil di-generate", [
+            Log::info("[CMS] SID diterbitkan ke S-INVEST", [
                 'kyc_id'     => $kyc->id,
                 'user_id'    => $kyc->user_id,
-                'user_name'  => $kyc->user->name,
                 'sid_number' => $sidResult['sid_number'],
                 'admin_id'   => $admin->id,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => "KYC nasabah {$kyc->user->name} berhasil disetujui dan SID telah diterbitkan.",
+                'message' => "SID nasabah {$kyc->user->name} berhasil diterbitkan.",
                 'data'    => [
-                    'kyc_id'     => $kyc->id,
-                    'user_id'    => $kyc->user_id,
-                    'user_name'  => $kyc->user->name,
-                    'sid_number' => $sidResult['sid_number'],
-                    'ifua_number'=> $sidResult['ifua_number'],
-                    'approved_by'=> $admin->name,
-                    'approved_at'=> $kyc->reviewed_at,
+                    'kyc_id'      => $kyc->id,
+                    'user_id'     => $kyc->user_id,
+                    'user_name'   => $kyc->user->name,
+                    'sid_number'  => $sidResult['sid_number'],
+                    'ifua_number' => $sidResult['ifua_number'],
+                    'issued_by'   => $admin->name,
                 ],
             ]);
         } catch (\Exception $e) {
-            // Rollback persetujuan KYC jika generasi SID gagal
-            $kyc->update([
-                'status'      => Kyc::STATUS_PENDING,
-                'reviewed_by' => null,
-                'reviewed_at' => null,
-            ]);
-
-            Log::error("[CMS] Gagal generate SID setelah approve KYC", [
-                'kyc_id'  => $id,
-                'error'   => $e->getMessage(),
+            Log::error("[CMS] Gagal menerbitkan SID", [
+                'kyc_id' => $id,
+                'error'  => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyetujui KYC: ' . $e->getMessage(),
+                'message' => 'Gagal menerbitkan SID: ' . $e->getMessage(),
             ], 500);
         }
     }

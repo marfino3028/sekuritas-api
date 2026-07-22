@@ -178,6 +178,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
         Route::get('/{id}',           [CmsKycController::class, 'show']);
         Route::put('/{id}/approve',   [CmsKycController::class, 'approve']);
         Route::put('/{id}/reject',    [CmsKycController::class, 'reject']);
+        Route::post('/{id}/issue-sid',[CmsKycController::class, 'issueSid']); // terbitkan SID (langkah 2)
     });
 
     // --------------------------------------------------------
