@@ -71,17 +71,18 @@ class MutualFund extends Model
     protected $casts = [
         'nav_date'            => 'date',
         'risk_level'          => 'integer',
-        'nav_per_unit'        => 'decimal:4',
-        'min_subscription'    => 'decimal:2',
-        'min_redemption_unit' => 'decimal:8',
-        'management_fee'      => 'decimal:2',
-        'subscription_fee'    => 'decimal:2',
-        'redemption_fee'      => 'decimal:2',
-        'total_aum'           => 'decimal:2',
-        'platform_aum'        => 'decimal:2',
-        'performance_1yr'     => 'decimal:2',
-        'performance_3yr'     => 'decimal:2',
-        'performance_ytd'     => 'decimal:2',
+        // float (bukan decimal:N) agar JSON API mengirim ANGKA, bukan string.
+        'nav_per_unit'        => 'float',
+        'min_subscription'    => 'float',
+        'min_redemption_unit' => 'float',
+        'management_fee'      => 'float',
+        'subscription_fee'    => 'float',
+        'redemption_fee'      => 'float',
+        'total_aum'           => 'float',
+        'platform_aum'        => 'float',
+        'performance_1yr'     => 'float',
+        'performance_3yr'     => 'float',
+        'performance_ytd'     => 'float',
         'is_syariah'          => 'boolean',
         'is_active'           => 'boolean',
     ];
@@ -157,8 +158,9 @@ class MutualFund extends Model
     /**
      * Label jenis reksa dana dalam Bahasa Indonesia.
      */
-    public function getFundTypeLabelAttribute(): string
+    public function getFundTypeLabelAttribute(): ?string
     {
+        // Bisa null pada query agregat (managers) yang tidak menyertakan kolom fund_type.
         return self::TYPE_LABELS[$this->fund_type] ?? $this->fund_type;
     }
 

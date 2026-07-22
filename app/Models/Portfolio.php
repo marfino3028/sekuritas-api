@@ -20,11 +20,12 @@ class Portfolio extends Model
     ];
 
     protected $casts = [
-        'total_units'     => 'decimal:8',
-        'avg_nav'         => 'decimal:4',
-        'current_value'   => 'decimal:2',
-        'unrealized_gain' => 'decimal:2',
-        'total_invested'  => 'decimal:2',
+        // float agar JSON API mengirim angka (bukan string)
+        'total_units'     => 'float',
+        'avg_nav'         => 'float',
+        'current_value'   => 'float',
+        'unrealized_gain' => 'float',
+        'total_invested'  => 'float',
     ];
 
     // ============================================

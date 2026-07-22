@@ -43,10 +43,11 @@ class Transaction extends Model
     ];
 
     protected $casts = [
-        'amount'               => 'decimal:2',
-        'units'                => 'decimal:8',
-        'nav_price'            => 'decimal:4',
-        'fee_amount'           => 'decimal:2',
+        // float agar JSON API mengirim angka (bukan string)
+        'amount'               => 'float',
+        'units'                => 'float',
+        'nav_price'            => 'float',
+        'fee_amount'           => 'float',
         'payment_expired_at'   => 'datetime',
         'payment_confirmed_at' => 'datetime',
         'settled_at'           => 'datetime',
