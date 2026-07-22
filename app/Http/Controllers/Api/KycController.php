@@ -32,7 +32,7 @@ class KycController extends Controller
     public function uploadDocument(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:ktp,selfie',
+            'type' => 'required|in:ktp,selfie,npwp,bank_book',
             'file' => 'required|file|mimes:jpg,jpeg,png|max:5120', // max 5MB
         ], [
             'file.mimes' => 'Format file harus JPG atau PNG.',
@@ -62,8 +62,13 @@ class KycController extends Controller
             ['status' => Kyc::STATUS_PENDING]
         );
 
-        $field = $type === 'ktp' ? 'ktp_photo_path' : 'selfie_photo_path';
-        $kyc->update([$field => $path]);
+        $fieldMap = [
+            'ktp'       => 'ktp_photo_path',
+            'selfie'    => 'selfie_photo_path',
+            'npwp'      => 'npwp_photo_path',
+            'bank_book' => 'bank_book_photo_path',
+        ];
+        $kyc->update([$fieldMap[$type] => $path]);
 
         return response()->json([
             'success' => true,
@@ -111,6 +116,9 @@ class KycController extends Controller
             'province'             => 'required|string|max:100',
             'city'                 => 'required|string|max:100',
             'postal_code'          => 'nullable|string|max:10',
+            // Data pekerjaan & informasi tambahan (CGS) — disimpan sebagai JSON
+            'employment'           => 'nullable|array',
+            'additional_info'      => 'nullable|array',
         ], [
             'nik.size'           => 'NIK harus 16 digit.',
             'nik.unique'         => 'NIK sudah terdaftar.',
@@ -146,6 +154,7 @@ class KycController extends Controller
             'marital_status', 'education', 'occupation', 'income_level',
             'source_of_fund', 'investment_objective', 'address',
             'province', 'city', 'postal_code',
+            'employment', 'additional_info',
         ]), [
             'status'       => Kyc::STATUS_PENDING,
             'submitted_at' => Carbon::now(),

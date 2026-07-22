@@ -36,6 +36,10 @@ class Kyc extends Model
         'postal_code',
         'ktp_photo_path',
         'selfie_photo_path',
+        'npwp_photo_path',
+        'bank_book_photo_path',
+        'employment',
+        'additional_info',
         'status',
         'rejected_reason',
         'reviewed_by',
@@ -44,9 +48,11 @@ class Kyc extends Model
     ];
 
     protected $casts = [
-        'birth_date'   => 'date',
-        'reviewed_at'  => 'datetime',
-        'submitted_at' => 'datetime',
+        'birth_date'      => 'date',
+        'reviewed_at'     => 'datetime',
+        'submitted_at'    => 'datetime',
+        'employment'      => 'array',
+        'additional_info' => 'array',
     ];
 
     // ============================================
