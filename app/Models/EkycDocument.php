@@ -23,7 +23,7 @@ class EkycDocument extends Model
     ];
 
     protected $casts = [
-        'birth_date'    => 'date',
+        'birth_date'    => 'date:Y-m-d',
         'raw_ocr'       => 'array',
         'is_blur'       => 'boolean',
         'is_low_light'  => 'boolean',

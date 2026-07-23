@@ -47,7 +47,7 @@ class StubProvider implements EkycProvider
         );
     }
 
-    public function liveness(string $selfiePath): LivenessResult
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult
     {
         [$size, $seed] = $this->inspect($selfiePath);
         $score  = $size < 30_000 ? 48 : 95;

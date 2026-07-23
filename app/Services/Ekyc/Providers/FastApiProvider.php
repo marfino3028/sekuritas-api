@@ -64,11 +64,11 @@ class FastApiProvider implements EkycProvider
         );
     }
 
-    public function liveness(string $selfiePath): LivenessResult
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult
     {
         $res = $this->client()
             ->attach('file', $this->contents($selfiePath), basename($selfiePath))
-            ->post('/liveness')
+            ->post('/liveness', $expectedNik ? ['expected_nik' => $expectedNik] : [])
             ->throw()
             ->json();
 
@@ -77,6 +77,11 @@ class FastApiProvider implements EkycProvider
             score: (int) ($res['score'] ?? 0),
             isPrintedPhoto: (bool) ($res['is_printed_photo'] ?? false),
             isReplay: (bool) ($res['is_replay'] ?? false),
+            ktpDetected: array_key_exists('ktp_detected', $res) ? (bool) $res['ktp_detected'] : null,
+            nikInPhoto: $res['nik_in_photo'] ?? null,
+            nikMatch: array_key_exists('nik_match', $res) ? $res['nik_match'] : null,
+            idFaceMatch: array_key_exists('id_face_match', $res) ? $res['id_face_match'] : null,
+            idFaceMatchScore: isset($res['id_face_match_score']) ? (int) $res['id_face_match_score'] : null,
             raw: $res,
         );
     }

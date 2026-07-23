@@ -37,7 +37,7 @@ class SumsubProvider implements EkycProvider
         throw new RuntimeException('SumsubProvider::ocr belum diimplementasikan.');
     }
 
-    public function liveness(string $selfiePath): LivenessResult
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult
     {
         $this->guard();
         throw new RuntimeException('SumsubProvider::liveness belum diimplementasikan.');

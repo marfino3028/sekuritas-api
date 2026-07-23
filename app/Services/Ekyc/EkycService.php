@@ -22,6 +22,24 @@ use RuntimeException;
  */
 class EkycService
 {
+    /**
+     * Flag yang SELALU berarti tolak otomatis — indikasi kualitas dokumen
+     * buruk atau upaya spoofing yang jelas. Flag di luar daftar ini (mis.
+     * ketidakcocokan dari sinyal sekunder yang kurang reliable) tidak
+     * langsung menolak, tapi mendorong sesi ke status REVIEW untuk dicek
+     * admin secara manual — lihat verify().
+     */
+    private const HARD_FRAUD_FLAGS = [
+        'ktp_blur',
+        'ktp_low_light',
+        'ktp_screenshot',
+        'selfie_printed_photo',
+        'selfie_replay',
+        'liveness_failed',
+        'selfie_ktp_face_mismatch',
+        'duplicate_nik',
+    ];
+
     public function __construct(
         private readonly EkycManager $manager,
     ) {}
@@ -75,7 +93,7 @@ class EkycService
         }
 
         $liveness = $this->timed($session, 'liveness',
-            fn () => $this->manager->provider()->liveness($selfiePath));
+            fn () => $this->manager->provider()->liveness($selfiePath, $doc->nik));
 
         $faceMatch = $this->timed($session, 'face_match',
             fn () => $this->manager->provider()->faceMatch($selfiePath, $doc->image_path));
@@ -104,8 +122,10 @@ class EkycService
     {
         $this->guard($session);
 
+        $expectedNik = $session->document?->nik;
+
         $liveness = $this->timed($session, 'liveness',
-            fn () => $this->manager->provider()->liveness($selfiePath));
+            fn () => $this->manager->provider()->liveness($selfiePath, $expectedNik));
 
         $selfie = EkycSelfie::updateOrCreate(
             ['session_id' => $session->id],
@@ -168,12 +188,17 @@ class EkycService
         $final         = (int) round(($ocrScore * 0.2) + ($livenessScore * 0.35) + ($faceScore * 0.45));
 
         $flags = $this->collectFraudFlags($doc, $selfie);
+        $hardFlags = array_intersect($flags, self::HARD_FRAUD_FLAGS);
 
         $decision = match (true) {
-            !empty($flags)              => EkycResult::DECISION_REJECTED,
-            $final >= $t['auto_approve'] => EkycResult::DECISION_APPROVED,
-            $final <  $t['min_reject']   => EkycResult::DECISION_REJECTED,
-            default                      => EkycResult::DECISION_REVIEW,
+            // Flag berat (kualitas dokumen buruk / spoofing jelas / duplikat NIK) → tolak.
+            !empty($hardFlags)                            => EkycResult::DECISION_REJECTED,
+            // Skor gabungan terlalu rendah → tolak, apapun flag lainnya.
+            $final <  $t['min_reject']                     => EkycResult::DECISION_REJECTED,
+            // Skor tinggi DAN tidak ada flag sama sekali (termasuk yang soft) → approve otomatis.
+            empty($flags) && $final >= $t['auto_approve']  => EkycResult::DECISION_APPROVED,
+            // Sisanya (ada flag soft yang ambigu, atau skor di zona abu-abu) → review admin.
+            default                                         => EkycResult::DECISION_REVIEW,
         };
 
         $result = EkycResult::updateOrCreate(
@@ -194,11 +219,17 @@ class EkycService
             'status'        => $decision === EkycResult::DECISION_REJECTED
                 ? EkycSession::STATUS_REJECTED
                 : EkycSession::STATUS_VERIFIED,
-            'reject_reason' => $decision === EkycResult::DECISION_REJECTED ? implode(', ', $flags ?: ['skor di bawah ambang']) : null,
+            'reject_reason' => $decision === EkycResult::DECISION_REJECTED ? implode(', ', $hardFlags ?: ['skor di bawah ambang']) : null,
             'completed_at'  => Carbon::now(),
         ]);
 
-        if ($decision !== EkycResult::DECISION_REJECTED) {
+        // Salin path foto KTP/selfie ke tabel kyc TERLEPAS dari keputusan akhir eKYC,
+        // supaya endpoint /kyc/submit (yang cek kyc.ktp_photo_path/selfie_photo_path)
+        // tidak pernah stuck walau skor eKYC ditolak otomatis — tetap masuk antrian
+        // review admin manual di CMS (lihat syncToKyc()).
+        // Pengecualian: jika NIK milik user lain (duplicate_nik), skip sync
+        // agar tidak crash UNIQUE constraint — keputusan sudah REJECTED.
+        if (! in_array('duplicate_nik', $flags)) {
             $this->syncToKyc($session, $doc);
         }
 
@@ -210,19 +241,29 @@ class EkycService
     /** Salin identitas hasil eKYC ke tabel kyc (status pending untuk review admin). */
     private function syncToKyc(EkycSession $session, EkycDocument $doc): void
     {
-        Kyc::updateOrCreate(
-            ['user_id' => $session->user_id],
-            array_filter([
-                'nik'               => $doc->nik,
-                'birth_date'        => $doc->birth_date,
-                'gender'            => $this->normalizeGender($doc->gender),
-                'address'           => $doc->address,
-                'ktp_photo_path'    => $doc->image_path,
-                'selfie_photo_path' => $session->selfie?->image_path,
-                'status'            => Kyc::STATUS_PENDING,
-                'submitted_at'      => Carbon::now(),
-            ], fn ($v) => $v !== null)
-        );
+        try {
+            Kyc::updateOrCreate(
+                ['user_id' => $session->user_id],
+                array_filter([
+                    'nik'               => $doc->nik,
+                    'birth_date'        => $doc->birth_date,
+                    'gender'            => $this->normalizeGender($doc->gender),
+                    'address'           => $doc->address,
+                    'ktp_photo_path'    => $doc->image_path,
+                    'selfie_photo_path' => $session->selfie?->image_path,
+                    'status'            => Kyc::STATUS_PENDING,
+                    'submitted_at'      => Carbon::now(),
+                ], fn ($v) => $v !== null)
+            );
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // NIK sudah terdaftar di akun lain — log saja, jangan crash.
+            // Keputusan eKYC sudah handled via collectFraudFlags (duplicate_nik).
+            \Illuminate\Support\Facades\Log::warning('[eKYC] syncToKyc: NIK sudah terdaftar di akun lain, sync dilewati.', [
+                'user_id'    => $session->user_id,
+                'session_id' => $session->id,
+                'nik'        => $doc->nik,
+            ]);
+        }
     }
 
     /** Normalisasi gender OCR (LAKI-LAKI/PEREMPUAN/M/F) → 'M' | 'F' | null. */
@@ -235,7 +276,22 @@ class EkycService
         return null;
     }
 
-    /** Deteksi red-flag dasar untuk anti-fraud. */
+    /**
+     * Deteksi red-flag anti-fraud.
+     *
+     * Dua sumber sinyal wajah dipakai:
+     *   - face_matched/face_match_score (endpoint /face-match, InsightFace,
+     *     berbasis embedding) → sinyal UTAMA, dibuat khusus untuk task ini.
+     *   - id_face_match (dibaca sekaligus oleh model vision-OCR saat /liveness,
+     *     bukan model perbandingan wajah) → sinyal SEKUNDER, kurang reliable.
+     * Kalau cuma sinyal sekunder yang gagal sementara sinyal utama cocok,
+     * tidak langsung ditolak (supaya satu model yang noisy tidak sendirian
+     * menjatuhkan keputusan tolak) — cukup ditandai utk review admin.
+     *
+     * Sama halnya nik_match (NIK yang terbaca dari foto KTP yang dipegang
+     * saat selfie) rawan salah baca karena sudut/blur, jadi juga hanya
+     * ditandai review, bukan tolak otomatis.
+     */
     private function collectFraudFlags(EkycDocument $doc, EkycSelfie $selfie): array
     {
         $flags = [];
@@ -245,6 +301,20 @@ class EkycService
         if ($selfie->is_printed_photo) $flags[] = 'selfie_printed_photo';
         if ($selfie->is_replay)     $flags[] = 'selfie_replay';
         if ($selfie->liveness_passed === false) $flags[] = 'liveness_failed';
+
+        $primaryFaceMismatch   = $selfie->face_matched === false;
+        $secondaryFaceMismatch = $selfie->id_face_match === false;
+        if ($primaryFaceMismatch && $secondaryFaceMismatch) {
+            // Kedua model sepakat wajah tidak cocok → hard flag, tolak otomatis.
+            $flags[] = 'selfie_ktp_face_mismatch';
+        } elseif ($primaryFaceMismatch || $secondaryFaceMismatch) {
+            // Cuma satu model yang bilang tidak cocok → ambigu, minta review manual.
+            $flags[] = 'selfie_ktp_face_mismatch_review';
+        }
+
+        if ($selfie->nik_match === false) {
+            $flags[] = 'selfie_ktp_nik_mismatch_review';
+        }
 
         // Cek duplikat KTP: NIK yang sama sudah dipakai user lain
         if ($doc->nik) {

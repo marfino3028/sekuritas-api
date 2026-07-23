@@ -33,7 +33,7 @@ class AdvanceAiProvider implements EkycProvider
         throw new RuntimeException('AdvanceAiProvider::ocr belum diimplementasikan.');
     }
 
-    public function liveness(string $selfiePath): LivenessResult
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult
     {
         $this->guard();
         throw new RuntimeException('AdvanceAiProvider::liveness belum diimplementasikan.');

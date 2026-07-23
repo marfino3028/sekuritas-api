@@ -27,8 +27,14 @@ interface EkycProvider
 
     /**
      * Passive liveness detection pada foto selfie.
+     *
+     * @param string|null $expectedNik NIK hasil OCR KTP sebelumnya (opsional).
+     *                                 Kalau diisi dan provider mendukung cek
+     *                                 "selfie sambil pegang KTP", provider akan
+     *                                 mencocokkan NIK yang kebaca di foto selfie
+     *                                 tsb terhadap NIK ini (LivenessResult::$nikMatch).
      */
-    public function liveness(string $selfiePath): LivenessResult;
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult;
 
     /**
      * Face match antara selfie dan foto wajah pada KTP.

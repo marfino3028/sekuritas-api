@@ -51,6 +51,10 @@ class EkycController extends Controller
     /** Langkah 1 — OCR KTP. */
     public function ocr(Request $request): JsonResponse
     {
+        // Model OCR (vision LLM via llama-cpp) lebih berat dari PaddleOCR lama,
+        // proses bisa >30 detik. Naikkan batas eksekusi PHP untuk endpoint ini saja.
+        set_time_limit(240);
+
         $v = Validator::make($request->all(), [
             'session_id' => 'nullable|uuid',
             'file'       => 'required|file|mimes:jpg,jpeg,png|max:5120',
@@ -82,6 +86,10 @@ class EkycController extends Controller
     /** Langkah 2a — Liveness. */
     public function liveness(Request $request): JsonResponse
     {
+        // Liveness (InsightFace/buffalo_l) juga berat di CPU + bisa trigger
+        // download model pertama kali; samakan batas eksekusi dgn endpoint OCR.
+        set_time_limit(240);
+
         $v = Validator::make($request->all(), [
             'session_id' => 'required|uuid',
             'file'       => 'required|file|mimes:jpg,jpeg,png|max:5120',
@@ -97,13 +105,19 @@ class EkycController extends Controller
 
         return $this->ok('Liveness diproses.', [
             'session'  => $this->serialize($session->fresh()),
-            'liveness' => $selfie->only(['liveness_passed', 'liveness_score', 'is_printed_photo', 'is_replay']),
+            'liveness' => $selfie->only([
+                'liveness_passed', 'liveness_score', 'is_printed_photo', 'is_replay',
+                'ktp_detected', 'nik_in_photo', 'nik_match', 'id_face_match', 'id_face_match_score',
+            ]),
         ]);
     }
 
     /** Langkah 2b — Face match. */
     public function faceMatch(Request $request): JsonResponse
     {
+        // Sama seperti liveness: inference wajah di CPU bisa >30 detik.
+        set_time_limit(240);
+
         $v = Validator::make($request->all(), ['session_id' => 'required|uuid']);
         if ($v->fails()) return $this->fail($v);
 
@@ -151,7 +165,19 @@ class EkycController extends Controller
         $session = $this->resolveSession($request->input('session_id'), JWTAuth::user()->id);
         if (! $session) return $this->notFound();
 
-        $result = $this->ekyc->verify($session);
+        try {
+            $result = $this->ekyc->verify($session);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'NIK yang sama telah terdaftar pada akun lain. Hubungi layanan pelanggan jika ini merupakan kesalahan.',
+            ], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
 
         // Kirim email "Lengkapi Akun" bila verifikasi tidak ditolak (gagal email tak menggagalkan proses)
         if ($result->decision !== EkycResult::DECISION_REJECTED) {

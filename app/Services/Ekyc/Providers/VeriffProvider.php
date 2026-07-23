@@ -33,7 +33,7 @@ class VeriffProvider implements EkycProvider
         throw new RuntimeException('VeriffProvider::ocr belum diimplementasikan.');
     }
 
-    public function liveness(string $selfiePath): LivenessResult
+    public function liveness(string $selfiePath, ?string $expectedNik = null): LivenessResult
     {
         $this->guard();
         throw new RuntimeException('VeriffProvider::liveness belum diimplementasikan.');

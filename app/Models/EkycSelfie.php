@@ -17,6 +17,7 @@ class EkycSelfie extends Model
     protected $fillable = [
         'session_id', 'image_path',
         'liveness_passed', 'liveness_score', 'is_printed_photo', 'is_replay',
+        'ktp_detected', 'nik_in_photo', 'nik_match', 'id_face_match', 'id_face_match_score',
         'face_matched', 'face_match_score', 'face_embedding',
     ];
 
@@ -24,6 +25,9 @@ class EkycSelfie extends Model
         'liveness_passed'  => 'boolean',
         'is_printed_photo' => 'boolean',
         'is_replay'        => 'boolean',
+        'ktp_detected'     => 'boolean',
+        'nik_match'        => 'boolean',
+        'id_face_match'    => 'boolean',
         'face_matched'     => 'boolean',
         'face_embedding'   => 'array',
     ];

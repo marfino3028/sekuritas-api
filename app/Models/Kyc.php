@@ -50,7 +50,7 @@ class Kyc extends Model
     ];
 
     protected $casts = [
-        'birth_date'      => 'date',
+        'birth_date'      => 'date:Y-m-d',
         'reviewed_at'     => 'datetime',
         'submitted_at'    => 'datetime',
         'employment'      => 'array',
