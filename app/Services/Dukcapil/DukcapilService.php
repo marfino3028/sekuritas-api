@@ -118,17 +118,33 @@ class DukcapilService
 
         $verified = $validDate && empty($flags);
 
-        return $this->result($verified, 'mock', $verified
-            ? 'Struktur NIK valid (mode demo — bukan pengecekan Dukcapil resmi).'
+        return $this->result($verified, 'nik-lokal', $verified
+            ? 'Struktur NIK valid (parser lokal — bukan pengecekan Dukcapil resmi).'
             : 'NIK tidak lolos validasi struktur.', [
-                'nik'             => $nik,
-                'derived_gender'  => $gender,
-                'derived_dob'     => $dob,
-                'birth_match'     => $birthMatch,
-                'name_hint'       => $name,
-                'flags'           => $flags,
+                'nik'         => $nik,
+                'provinsi'    => self::PROVINSI[substr($nik, 0, 2)] ?? null,
+                'kelamin'     => $gender,
+                'tgl_lahir'   => $dob,
+                'birth_match' => $birthMatch,
+                'name_hint'   => $name,
+                'flags'       => $flags,
             ]);
     }
+
+    /** Kode provinsi (2 digit pertama NIK) → nama. */
+    private const PROVINSI = [
+        '11' => 'Aceh', '12' => 'Sumatera Utara', '13' => 'Sumatera Barat', '14' => 'Riau',
+        '15' => 'Jambi', '16' => 'Sumatera Selatan', '17' => 'Bengkulu', '18' => 'Lampung',
+        '19' => 'Kep. Bangka Belitung', '21' => 'Kepulauan Riau', '31' => 'DKI Jakarta',
+        '32' => 'Jawa Barat', '33' => 'Jawa Tengah', '34' => 'DI Yogyakarta', '35' => 'Jawa Timur',
+        '36' => 'Banten', '51' => 'Bali', '52' => 'Nusa Tenggara Barat', '53' => 'Nusa Tenggara Timur',
+        '61' => 'Kalimantan Barat', '62' => 'Kalimantan Tengah', '63' => 'Kalimantan Selatan',
+        '64' => 'Kalimantan Timur', '65' => 'Kalimantan Utara', '71' => 'Sulawesi Utara',
+        '72' => 'Sulawesi Tengah', '73' => 'Sulawesi Selatan', '74' => 'Sulawesi Tenggara',
+        '75' => 'Gorontalo', '76' => 'Sulawesi Barat', '81' => 'Maluku', '82' => 'Maluku Utara',
+        '91' => 'Papua', '92' => 'Papua Barat', '93' => 'Papua Selatan', '94' => 'Papua Tengah',
+        '95' => 'Papua Pegunungan', '96' => 'Papua Barat Daya',
+    ];
 
     /**
      * KERANGKA integrasi Dukcapil resmi. Lengkapi sesuai spesifikasi Kemendagri
