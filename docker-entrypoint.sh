@@ -28,7 +28,7 @@ if [ -z "$(grep '^APP_KEY=base64:' .env)" ]; then
 fi
 
 # Generate JWT secret jika belum ada
-if [ -z "$(grep '^JWT_SECRET=' .env | grep -v 'JWT_SECRET=$')" ]; then
+if [ -z "$JWT_SECRET" ]; then
     echo "Generating JWT_SECRET..."
     php artisan jwt:secret --force
 fi
