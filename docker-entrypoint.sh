@@ -22,7 +22,7 @@ if [ ! -f .env ]; then
 fi
 
 # Generate app key jika belum ada
-if [ -z "$(grep '^APP_KEY=base64:' .env)" ]; then
+if [ -z "$APP_KEY" ] && [ -z "$(grep '^APP_KEY=base64:' .env)" ]; then
     echo "Generating APP_KEY..."
     php artisan key:generate --force
 fi

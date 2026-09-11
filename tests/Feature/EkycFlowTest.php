@@ -37,8 +37,8 @@ class EkycFlowTest extends TestCase
         $sessionId = $session->json('data.id');
         $this->assertNotEmpty($sessionId);
 
-        // 2. OCR KTP (file cukup besar agar lolos ambang kualitas stub)
-        $ktp = UploadedFile::fake()->create('ktp.jpg', 120, 'image/jpeg');
+        // 2. OCR KTP — createWithContent: isi file nyata (create() hanya melaporkan ukuran, isinya kosong)
+        $ktp = UploadedFile::fake()->createWithContent('ktp.jpg', str_repeat('K', 120 * 1024));
         $this->withHeaders($headers)->post('/api/ekyc/ocr', [
             'session_id' => $sessionId,
             'file'       => $ktp,
@@ -47,7 +47,7 @@ class EkycFlowTest extends TestCase
         ])->assertOk()->assertJsonPath('data.session.status', 'ocr_done');
 
         // 3. Liveness (selfie)
-        $selfie = UploadedFile::fake()->create('selfie.jpg', 120, 'image/jpeg');
+        $selfie = UploadedFile::fake()->createWithContent('selfie.jpg', str_repeat('S', 120 * 1024));
         $this->withHeaders($headers)->post('/api/ekyc/liveness', [
             'session_id' => $sessionId,
             'file'       => $selfie,

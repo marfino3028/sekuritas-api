@@ -74,7 +74,10 @@ COPY --from=builder /var/www/html .
 # Set permission
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+    && chmod -R 755 /var/www/html/bootstrap/cache \
+    # nginx jalan sbg www-data, tapi folder temp bawaan Alpine milik user nginx →
+    # upload > 16KB (foto KTP/selfie) gagal 500 "Permission denied" tanpa ini.
+    && chown -R www-data:www-data /var/lib/nginx
 
 # Nginx config
 RUN cat > /etc/nginx/nginx.conf <<'NGINX_EOF'
@@ -92,6 +95,8 @@ http {
     default_type  application/octet-stream;
     sendfile on;
     keepalive_timeout 65;
+    # Foto KTP/selfie dari HP 2–5 MB (default nginx cuma 1 MB); samakan dgn post_max_size PHP.
+    client_max_body_size 10m;
 
     server {
         listen 80;
