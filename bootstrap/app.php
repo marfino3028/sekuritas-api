@@ -29,5 +29,19 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->runInBackground();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Layanan AI eKYC (FastAPI, mis. laptop via Cloudflare Tunnel) tidak terjangkau / error:
+        // tampilkan pesan yang jelas (503), bukan "Server Error" 500.
+        $aiDown = function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (! $request->is('api/ekyc/*')) {
+                return null;
+            }
+            \Illuminate\Support\Facades\Log::warning('Layanan AI eKYC gagal: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Layanan verifikasi AI (eKYC) sedang tidak terjangkau. Silakan coba lagi beberapa saat lagi.',
+            ], 503);
+        };
+        $exceptions->render(fn (\Illuminate\Http\Client\ConnectionException $e, $request) => $aiDown($e, $request));
+        $exceptions->render(fn (\Illuminate\Http\Client\RequestException $e, $request) => $aiDown($e, $request));
     })->create();
