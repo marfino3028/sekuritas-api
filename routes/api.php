@@ -16,6 +16,9 @@ use App\Http\Controllers\Cms\EventController as CmsEventController;
 use App\Http\Controllers\Cms\KycController as CmsKycController;
 use App\Http\Controllers\Cms\ProductController as CmsProductController;
 use App\Http\Controllers\Cms\UserController as CmsUserController;
+use App\Http\Controllers\Cms\DashboardController as CmsDashboardController;
+use App\Http\Controllers\Cms\TransactionController as CmsTransactionController;
+use App\Http\Controllers\Cms\ReportController as CmsReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -172,6 +175,17 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     Route::post('/auth/login',  [CmsAuthController::class, 'login'])->withoutMiddleware(['auth:api', 'admin']);
     Route::post('/auth/logout', [CmsAuthController::class, 'logout']);
     Route::get('/auth/me',      [CmsAuthController::class, 'me']);
+
+    // Dashboard, transaksi & laporan (dipakai halaman Dashboard/Transactions/Reports CMS)
+    Route::get('/dashboard',    [CmsDashboardController::class, 'index']);
+    Route::get('/transactions', [CmsTransactionController::class, 'index']);
+    Route::prefix('reports')->group(function () {
+        Route::get('/transactions', [CmsReportController::class, 'transactions']);
+        Route::get('/kyc',          [CmsReportController::class, 'kyc']);
+        Route::get('/aum',          [CmsReportController::class, 'aum']);
+        Route::get('/users',        [CmsReportController::class, 'users']);
+        Route::get('/nav',          [CmsReportController::class, 'nav']);
+    });
 
     // --------------------------------------------------------
     // KYC Management
