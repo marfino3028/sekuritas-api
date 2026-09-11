@@ -51,7 +51,7 @@ class ArticleSeeder extends Seeder
                     'excerpt'      => $excerpt,
                     'content'      => $this->body($title, $excerpt),
                     'image_url'    => "https://picsum.photos/seed/vs-artikel-{$i}/1200/630",
-                    'author'       => $category === 'Berita Pasar' ? 'Tim Riset Victoria Sekuritas' : 'Tim Edukasi Victoria Sekuritas',
+                    'author'       => $category === 'Berita Pasar' ? 'Tim Riset Danapathi' : 'Tim Edukasi Danapathi',
                     'source'       => $category === 'Berita Pasar' ? 'Riset Internal' : null,
                     'is_published' => true,
                     'published_at' => Carbon::now()->subDays(($i + 1) * 3),
@@ -65,7 +65,7 @@ class ArticleSeeder extends Seeder
     private function body(string $title, string $excerpt): string
     {
         return "<p><strong>{$excerpt}</strong></p>"
-            . "<p>Investasi reksa dana kini semakin mudah diakses siapa saja. Melalui platform Victoria Sekuritas, "
+            . "<p>Investasi reksa dana kini semakin mudah diakses siapa saja. Melalui platform Danapathi, "
             . "Anda dapat mulai berinvestasi dengan nominal terjangkau, memantau kinerja secara transparan, dan "
             . "memilih produk sesuai profil risiko Anda.</p>"
             . "<h3>Poin Penting</h3><ul>"

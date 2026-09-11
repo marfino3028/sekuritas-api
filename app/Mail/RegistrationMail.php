@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Email konfirmasi registrasi + tautan aktivasi akun (Victoria Sekuritas).
+ * Email konfirmasi registrasi + tautan aktivasi akun (Danapathi Asset Management).
  *
  * Contoh pemakaian (mis. di AuthController@register):
  *   Mail::to($user->email)->send(new RegistrationMail(
@@ -30,7 +30,7 @@ class RegistrationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Registrasi Victoria Sekuritas — Aktivasi Akun');
+        return new Envelope(subject: 'Registrasi Danapathi Asset Management — Aktivasi Akun');
     }
 
     public function content(): Content

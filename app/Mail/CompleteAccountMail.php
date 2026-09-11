@@ -27,7 +27,7 @@ class CompleteAccountMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Lengkapi Akun — Dokumen Pembukaan Rekening Victoria Sekuritas');
+        return new Envelope(subject: 'Lengkapi Akun — Dokumen Pembukaan Rekening Danapathi Asset Management');
     }
 
     public function content(): Content
