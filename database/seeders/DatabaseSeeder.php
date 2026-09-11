@@ -35,8 +35,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Database seeder selesai!');
-        $this->command->info('Login CMS Super Admin: superadmin@danapathi-demo.id / Admin@123456');
-        $this->command->info('Login CMS Ops: ops@danapathi-demo.id / Ops@123456');
+        $this->command->info('Login CMS Super Admin: superadmin@danapathi-demo.id / ' . (env('DEMO_ADMIN_PASSWORD') ? '(dari DEMO_ADMIN_PASSWORD)' : 'Admin@123456'));
+        $this->command->info('Login CMS Ops: ops@danapathi-demo.id / ' . (env('DEMO_OPS_PASSWORD') ? '(dari DEMO_OPS_PASSWORD)' : 'Ops@123456'));
         $this->command->info('Event demo: DANAPATHI-INVESTDAY | BOOTH-DANAPATHI-JKT | WEBINAR-DANAPATHI-PU | ROADSHOW-DANAPATHI');
     }
 
@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name'              => 'Super Admin',
                 'phone'             => '081234567890',
-                'password'          => Hash::make('Admin@123456'),
+                'password'          => Hash::make(env('DEMO_ADMIN_PASSWORD') ?: 'Admin@123456'),
                 'role'              => User::ROLE_SUPER_ADMIN,
                 'status'            => User::STATUS_ACTIVE,
                 'email_verified_at' => Carbon::now(),
@@ -64,7 +64,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name'              => 'Admin Operasional',
                 'phone'             => '081234567891',
-                'password'          => Hash::make('Ops@123456'),
+                'password'          => Hash::make(env('DEMO_OPS_PASSWORD') ?: 'Ops@123456'),
                 'role'              => User::ROLE_ADMIN_OPS,
                 'status'            => User::STATUS_ACTIVE,
                 'email_verified_at' => Carbon::now(),

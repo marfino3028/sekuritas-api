@@ -19,11 +19,17 @@ use Illuminate\Support\Str;
  *                            alur Pembukaan Rekening (eKYC) dari awal.
  *
  * <domain> mengikuti email Super Admin (sekuritas-demo.id / danapathi-demo.id) agar
- * seeder yang sama berlaku di branch main & danapathi. Password keduanya: Member@123
+ * seeder yang sama berlaku di branch main & danapathi. Password: Member@123 (atau DEMO_MEMBER_PASSWORD)
  */
 class DemoAccountSeeder extends NasabahSeeder
 {
-    public const PASSWORD = 'Member@123';
+    public const DEFAULT_PASSWORD = 'Member@123';
+
+    /** Di server publik set DEMO_MEMBER_PASSWORD agar tidak memakai password default yang ada di dokumen. */
+    private function password(): string
+    {
+        return env('DEMO_MEMBER_PASSWORD') ?: self::DEFAULT_PASSWORD;
+    }
 
     public function run(): void
     {
@@ -39,7 +45,7 @@ class DemoAccountSeeder extends NasabahSeeder
             [
                 'name'                => $name,
                 'phone'               => '081311110001',
-                'password'            => Hash::make(self::PASSWORD),
+                'password'            => Hash::make($this->password()),
                 'role'                => User::ROLE_USER,
                 'status'              => User::STATUS_ACTIVE,
                 'email_verified_at'   => Carbon::now()->subDays(40),
@@ -88,7 +94,7 @@ class DemoAccountSeeder extends NasabahSeeder
             [
                 'name'              => 'Member Baru',
                 'phone'             => '081311110002',
-                'password'          => Hash::make(self::PASSWORD),
+                'password'          => Hash::make($this->password()),
                 'role'              => User::ROLE_USER,
                 'status'            => User::STATUS_PENDING,
                 'email_verified_at' => Carbon::now(), // sudah aktivasi email
@@ -96,6 +102,7 @@ class DemoAccountSeeder extends NasabahSeeder
             ]
         );
 
-        $this->command->info("Akun member demo: member@{$domain} (aktif) & member.baru@{$domain} (belum KYC). Password: " . self::PASSWORD);
+        $pw = env('DEMO_MEMBER_PASSWORD') ? '(dari DEMO_MEMBER_PASSWORD)' : self::DEFAULT_PASSWORD;
+        $this->command->info("Akun member demo: member@{$domain} (aktif) & member.baru@{$domain} (belum KYC). Password: {$pw}");
     }
 }
