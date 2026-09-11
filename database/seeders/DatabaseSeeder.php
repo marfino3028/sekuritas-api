@@ -35,8 +35,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Database seeder selesai!');
-        $this->command->info('Login CMS: admin@sekuritas-demo.id / password: Admin@123456');
-        $this->command->info('Login Ops: ops@sekuritas-demo.id / password: Ops@123456');
+        $this->command->info('Login CMS Super Admin: superadmin@danapathi-demo.id / Admin@123456');
+        $this->command->info('Login CMS Ops: ops@danapathi-demo.id / Ops@123456');
         $this->command->info('Event demo: DANAPATHI-INVESTDAY | BOOTH-DANAPATHI-JKT | WEBINAR-DANAPATHI-PU | ROADSHOW-DANAPATHI');
     }
 
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
     {
         // Super Admin
         User::firstOrCreate(
-            ['email' => 'admin@sekuritas-demo.id'],
+            ['email' => 'superadmin@danapathi-demo.id'],
             [
                 'name'              => 'Super Admin',
                 'phone'             => '081234567890',
@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
 
         // Admin Ops
         User::firstOrCreate(
-            ['email' => 'ops@sekuritas-demo.id'],
+            ['email' => 'ops@danapathi-demo.id'],
             [
                 'name'              => 'Admin Operasional',
                 'phone'             => '081234567891',
