@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ArticleSeeder::class,
             NasabahSeeder::class,
+            DemoAccountSeeder::class,   // member aktif + member baru (akun demo tetap)
             EventRegistrationSeeder::class,
         ]);
 

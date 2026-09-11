@@ -111,7 +111,7 @@ class NasabahSeeder extends Seeder
         $this->command->info('Nasabah demo berhasil di-seed (' . count($names) . ' nasabah). Password: Nasabah@123');
     }
 
-    private function seedEkyc(User $user, string $name, string $nik, string $gender, string $kycStatus): void
+    protected function seedEkyc(User $user, string $name, string $nik, string $gender, string $kycStatus): void
     {
         if (EkycSession::where('user_id', $user->id)->exists()) {
             return;
@@ -177,7 +177,7 @@ class NasabahSeeder extends Seeder
         ]);
     }
 
-    private function seedSid(User $user, string $name): void
+    protected function seedSid(User $user, string $name): void
     {
         if (SidData::where('user_id', $user->id)->exists()) {
             return;
@@ -194,7 +194,7 @@ class NasabahSeeder extends Seeder
         $user->update(['sid_number' => $sid, 'ifua_number' => $ifua]);
     }
 
-    private function seedPortfolioAndTransactions(User $user, $funds, int $i): void
+    protected function seedPortfolioAndTransactions(User $user, $funds, int $i): void
     {
         $picks = $funds->random(min(3, $funds->count()));
 
