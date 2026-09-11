@@ -101,6 +101,11 @@ class KycController extends Controller
             'success' => true,
             'data'    => array_merge($kyc->toArray(), [
                 'ekyc' => $ekyc,
+                // Data nasabah diratakan (halaman detail CMS membaca kyc.name/email/phone)
+                'name'        => $kyc->user?->name,
+                'email'       => $kyc->user?->email,
+                'phone'       => $kyc->user?->phone,
+                'reviewed_by' => $kyc->reviewer?->name,
                 // URL dokumen (frontend CMS memakai nama tanpa _path)
                 'ktp_photo'       => $url($kyc->ktp_photo_path),
                 'selfie_photo'    => $url($kyc->selfie_photo_path),
