@@ -49,8 +49,8 @@ class FastApiProvider implements EkycProvider
         return new OcrResult(
             nik: $res['nik'] ?? null,
             name: $res['name'] ?? null,
-            birthPlace: $res['birth_place'] ?? null,
-            birthDate: $res['birth_date'] ?? null,
+            birthPlace: $this->cleanBirthPlace($res['birth_place'] ?? null),
+            birthDate: $this->normalizeDate($res['birth_date'] ?? null),
             gender: $res['gender'] ?? null,
             address: $res['address'] ?? null,
             religion: $res['religion'] ?? null,
@@ -101,5 +101,38 @@ class FastApiProvider implements EkycProvider
             embedding: $res['embedding'] ?? [],
             raw: $res,
         );
+    }
+
+    /**
+     * Engine OCR asli (Nanonets) mengembalikan tanggal format KTP "DD-MM-YYYY";
+     * kolom DB bertipe date butuh "YYYY-MM-DD". Tanggal tak terbaca → null
+     * (bukan 500), user tetap bisa mengoreksi manual.
+     */
+    private function normalizeDate(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value, $m)) {
+            [$y, $mo, $d] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } elseif (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $value, $m)) {
+            [$d, $mo, $y] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } else {
+            return null;
+        }
+
+        return checkdate($mo, $d, $y) ? sprintf('%04d-%02d-%02d', $y, $mo, $d) : null;
+    }
+
+    /** "SURAKARTA, 26-07-2001" (field TTL KTP) → "SURAKARTA". */
+    private function cleanBirthPlace(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $clean = trim(preg_replace('/[,\s]+\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}\s*$/', '', $value));
+
+        return $clean === '' ? null : $clean;
     }
 }
