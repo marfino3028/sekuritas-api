@@ -18,8 +18,8 @@ use Illuminate\Support\Str;
  *  - member.baru@<domain>  — akun sudah diaktivasi tapi BELUM KYC → login langsung masuk
  *                            alur Pembukaan Rekening (eKYC) dari awal.
  *
- * <domain> mengikuti email Super Admin (sekuritas-demo.id / danapathi-demo.id) agar
- * seeder yang sama berlaku di branch main & danapathi. Password: Member@123 (atau DEMO_MEMBER_PASSWORD)
+ * <domain> mengikuti email Super Admin (sekuritas-demo.id / lif-demo.id) agar
+ * seeder yang sama berlaku di branch main & lif. Password: Member@123 (atau DEMO_MEMBER_PASSWORD)
  */
 class DemoAccountSeeder extends NasabahSeeder
 {

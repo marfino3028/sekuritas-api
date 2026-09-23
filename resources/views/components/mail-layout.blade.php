@@ -1,7 +1,7 @@
-@props(['title' => 'Danapathi Asset Management'])
+@props(['title' => 'PT LiF Manajemen Investasi'])
 @php
-    // Palet brand Danapathi (lihat sekuritas-infra/DESIGN_DANAPATHI.md)
-    $navy = '#14365F'; $blue = '#14365F'; $gold = '#198754'; $slate = '#F5F7FB';
+    // Palet brand LiF (lihat sekuritas-infra/DESIGN_LIF.md)
+    $navy = '#0B203A'; $blue = '#1D5191'; $gold = '#E8762E'; $slate = '#F9FAFB';
     $logo = rtrim(config('app.frontend_url'), '/') . '/logo-white.png';
 @endphp
 <!DOCTYPE html>
@@ -14,20 +14,21 @@
 <body style="margin:0;padding:0;background:{{ $slate }};font-family:Helvetica,Arial,sans-serif;color:#1f2937;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{{ $slate }};padding:24px 0;">
         <tr><td align="center">
-            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(15,53,103,.08);">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);">
                 <tr>
-                    <td style="background:linear-gradient(135deg,#0F2F55 0%,{{ $navy }} 55%,#1F4F87 100%);padding:24px 32px;">
-                        <img src="{{ $logo }}" alt="Danapathi Asset Management" height="44" style="display:block;height:44px;width:auto;border:0;">
+                    <td style="background:{{ $blue }};padding:24px 32px;">
+                        <img src="{{ $logo }}" alt="PT LiF Manajemen Investasi" height="48" style="display:block;height:48px;width:auto;border:0;">
                     </td>
                 </tr>
                 <tr><td style="padding:32px;font-size:15px;line-height:24px;">
                     {{ $slot }}
                 </td></tr>
                 <tr>
-                    <td style="background:#1A4978;padding:24px 32px;color:#dbe4ef;font-size:12px;line-height:20px;">
-                        <strong style="color:#fff;">PT Danapathi Asset Management</strong><br>
+                    <td style="background:{{ $navy }};padding:24px 32px;color:#dbe4ef;font-size:12px;line-height:20px;">
+                        <strong style="color:#fff;">PT LiF Manajemen Investasi</strong><br>
+                        Menara Batavia Lt. 6 Unit 3A, Jl. K.H. Mas Mansyur No. 126, Jakarta Pusat 10220 · (021) 2253 5128<br>
                         Berizin &amp; Diawasi oleh Otoritas Jasa Keuangan (OJK).<br>
-                        Email ini dikirim otomatis, mohon tidak membalas. &copy; {{ date('Y') }} Danapathi Asset Management.
+                        Email ini dikirim otomatis, mohon tidak membalas. &copy; {{ date('Y') }} PT LiF Manajemen Investasi.
                     </td>
                 </tr>
             </table>

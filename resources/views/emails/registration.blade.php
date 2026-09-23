@@ -1,11 +1,11 @@
-@php $gold = '#198754'; $blue = '#14365F'; @endphp
-<x-mail-layout title="Registrasi Danapathi Asset Management">
+@php $gold = '#E8762E'; $blue = '#1D5191'; @endphp
+<x-mail-layout title="Registrasi LiF Manajemen Investasi">
     <p style="margin:0 0 16px;">Kepada Nasabah Yang Terhormat / <em>Dear Valued Client</em>,</p>
 
     <p style="margin:0 0 16px;">
         Terima kasih telah melakukan pendaftaran Pembukaan Rekening Online pada
-        <strong>PT Danapathi Asset Management</strong>.<br>
-        <span style="color:#6b7280;"><em>Thank you for registering Online Account Opening with PT Danapathi Asset Management.</em></span>
+        <strong>PT LiF Manajemen Investasi</strong>.<br>
+        <span style="color:#6b7280;"><em>Thank you for registering Online Account Opening with PT LiF Manajemen Investasi.</em></span>
     </p>
 
     <p style="margin:0 0 8px;">Berikut adalah konfirmasi pendaftaran Anda / <em>Following is the confirmation of your registration</em>:</p>
@@ -27,5 +27,5 @@
         <em>You can use this Email and Password to complete the data and upload the required documents.</em>
     </p>
 
-    <p style="margin:0;">Terima kasih,<br>Hormat kami, <strong>PT Danapathi Asset Management</strong></p>
+    <p style="margin:0;">Terima kasih,<br>Hormat kami, <strong>PT LiF Manajemen Investasi</strong></p>
 </x-mail-layout>

@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
      * Seed database demo platform reksa dana.
      *
      * Yang di-seed:
-     * 1. Admin users (super_admin & admin_ops)
-     * 2. 5 produk reksa dana Danapathi Asset Management
+     * 1. Akun staf CMS (super_admin, admin, admin_ops, finance)
+     * 2. 4 produk reksa dana PT LiF Manajemen Investasi
      * 3. Histori NAV 1 tahun untuk setiap produk
      */
     public function run(): void
@@ -35,163 +35,156 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Database seeder selesai!');
-        $this->command->info('Login CMS Super Admin: superadmin@danapathi-demo.id / ' . (env('DEMO_ADMIN_PASSWORD') ? '(dari DEMO_ADMIN_PASSWORD)' : 'Admin@123456'));
-        $this->command->info('Login CMS Ops: ops@danapathi-demo.id / ' . (env('DEMO_OPS_PASSWORD') ? '(dari DEMO_OPS_PASSWORD)' : 'Ops@123456'));
-        $this->command->info('Event demo: DANAPATHI-INVESTDAY | BOOTH-DANAPATHI-JKT | WEBINAR-DANAPATHI-PU | ROADSHOW-DANAPATHI');
+        $adminPw = env('DEMO_ADMIN_PASSWORD') ? '(dari DEMO_ADMIN_PASSWORD)' : 'Admin@123456';
+        $opsPw   = env('DEMO_OPS_PASSWORD') ? '(dari DEMO_OPS_PASSWORD)' : 'Ops@123456';
+        $this->command->info("Login CMS: superadmin@lif-demo.id & admin@lif-demo.id / {$adminPw}");
+        $this->command->info("Login CMS: ops@lif-demo.id & finance@lif-demo.id / {$opsPw}");
+        $this->command->info('Event demo: LIF-EXTRA-THR | LIF-BIK | LIF-LITERASI-KAMPUS | LIF-BOOKTALK');
     }
 
     /**
-     * Seed akun admin.
+     * Akun staf CMS — satu per role. Password dari env (DEMO_*_PASSWORD) bila diisi.
+     *   superadmin@ & admin@  → DEMO_ADMIN_PASSWORD   (default Admin@123456)
+     *   ops@ & finance@       → DEMO_OPS_PASSWORD     (default Ops@123456)
      */
+    public const STAFF_ACCOUNTS = [
+        ['email' => 'superadmin@lif-demo.id', 'name' => 'Super Admin',        'role' => User::ROLE_SUPER_ADMIN, 'phone' => '081234567890', 'pw' => 'admin'],
+        ['email' => 'admin@lif-demo.id',      'name' => 'Admin LiF',          'role' => User::ROLE_ADMIN,       'phone' => '081234567892', 'pw' => 'admin'],
+        ['email' => 'ops@lif-demo.id',        'name' => 'Admin Operasional',  'role' => User::ROLE_ADMIN_OPS,   'phone' => '081234567891', 'pw' => 'ops'],
+        ['email' => 'finance@lif-demo.id',    'name' => 'Staf Finance',       'role' => User::ROLE_FINANCE,     'phone' => '081234567893', 'pw' => 'ops'],
+    ];
+
     private function seedAdminUsers(): void
     {
-        // Super Admin
-        User::firstOrCreate(
-            ['email' => 'superadmin@danapathi-demo.id'],
-            [
-                'name'              => 'Super Admin',
-                'phone'             => '081234567890',
-                'password'          => Hash::make(env('DEMO_ADMIN_PASSWORD') ?: 'Admin@123456'),
-                'role'              => User::ROLE_SUPER_ADMIN,
-                'status'            => User::STATUS_ACTIVE,
-                'email_verified_at' => Carbon::now(),
-            ]
-        );
+        $passwords = [
+            'admin' => env('DEMO_ADMIN_PASSWORD') ?: 'Admin@123456',
+            'ops'   => env('DEMO_OPS_PASSWORD') ?: 'Ops@123456',
+        ];
 
-        // Admin Ops
-        User::firstOrCreate(
-            ['email' => 'ops@danapathi-demo.id'],
-            [
-                'name'              => 'Admin Operasional',
-                'phone'             => '081234567891',
-                'password'          => Hash::make(env('DEMO_OPS_PASSWORD') ?: 'Ops@123456'),
-                'role'              => User::ROLE_ADMIN_OPS,
-                'status'            => User::STATUS_ACTIVE,
-                'email_verified_at' => Carbon::now(),
-            ]
-        );
+        foreach (self::STAFF_ACCOUNTS as $account) {
+            User::firstOrCreate(
+                ['email' => $account['email']],
+                [
+                    'name'              => $account['name'],
+                    'phone'             => $account['phone'],
+                    'password'          => Hash::make($passwords[$account['pw']]),
+                    'role'              => $account['role'],
+                    'status'            => User::STATUS_ACTIVE,
+                    'email_verified_at' => Carbon::now(),
+                ]
+            );
+        }
 
-        $this->command->info('Admin users berhasil di-seed.');
+        $this->command->info(count(self::STAFF_ACCOUNTS) . ' akun staf CMS berhasil di-seed.');
     }
 
     /**
-     * Seed 10 produk reksa dana Indonesia yang realistis.
-     * Data berdasarkan produk-produk yang ada di pasar reksa dana Indonesia.
+     * Seed 4 reksa dana PT LiF Manajemen Investasi (data asli lif-investasi.co.id).
      */
     private function seedMutualFunds(): void
     {
-        // Produk Danapathi Asset Management — nama & NAB/unit sesuai danapathi.co.id
-        // (NAB per 10 Sep 2026). AUM & kinerja = ANGKA DEMO, ganti dgn data resmi klien.
+        // NAB/unit & return (1D, YTD, 1Y, 3Y) sesuai lif-investasi.co.id per 22 Sep 2026.
+        // AUM, risiko & kustodian dari Fund Fact Sheet Agustus 2026. Biaya = batas maksimum di prospektus.
+        // base_nav = NAB ±1 tahun lalu (diturunkan dari return 1Y) untuk histori grafik.
+        $navDate = Carbon::parse('2026-09-22');
+        $manager = 'PT LiF Manajemen Investasi';
+
         $products = [
             [
-                'fund_code'          => 'DPMMF',
-                'name'               => 'Danapathi Money Market Fund',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'custodian_bank'     => 'Bank Kustodian',
-                'fund_type'          => MutualFund::TYPE_MONEY_MARKET,
-                'nav_per_unit'       => 1561.4435,
-                'nav_date'           => Carbon::today()->subDay(),
-                'min_subscription'   => 100000,
-                'min_redemption_unit'=> 1,
-                'management_fee'     => 0.75,
-                'subscription_fee'   => 0.00,
-                'redemption_fee'     => 0.00,
-                'total_aum'          => 1250000000000,
-                'performance_1yr'    => 5.62,
-                'performance_3yr'    => 16.9,
-                'performance_ytd'    => 3.95,
-                'is_syariah'         => false,
-                'is_active'          => true,
-                'description'        => 'Reksa dana pasar uang yang berinvestasi pada instrumen pasar uang dan deposito berjangka waktu kurang dari satu tahun. Cocok untuk dana darurat dan investor konservatif dengan kebutuhan likuiditas tinggi.',
-                'base_nav'           => 1475.0,
-            ],
-            [
-                'fund_code'          => 'DPSUKUK1',
-                'name'               => 'Danapathi Sukuk Syariah I',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'custodian_bank'     => 'Bank Kustodian',
-                'fund_type'          => MutualFund::TYPE_SHARIA,
-                'nav_per_unit'       => 2065.0728,
-                'nav_date'           => Carbon::today()->subDay(),
+                'fund_code'          => 'LBP',
+                'name'               => 'LiF Bond Plus',
+                'investment_manager' => $manager,
+                'custodian_bank'     => 'PT Bank Mandiri (Persero) Tbk',
+                'fund_type'          => MutualFund::TYPE_FIXED_INCOME,
+                'risk_level'         => 2,
+                'nav_per_unit'       => 2210.7235,
+                'nav_date'           => $navDate,
                 'min_subscription'   => 100000,
                 'min_redemption_unit'=> 1,
                 'management_fee'     => 1.25,
-                'subscription_fee'   => 0.00,
-                'redemption_fee'     => 0.00,
-                'total_aum'          => 780000000000,
-                'performance_1yr'    => 6.85,
-                'performance_3yr'    => 20.4,
-                'performance_ytd'    => 4.7,
-                'is_syariah'         => true,
+                'subscription_fee'   => 2.50,
+                'redemption_fee'     => 1.00,
+                'total_aum'          => 11629138393.78,
+                'performance_1yr'    => 2.36,
+                'performance_3yr'    => 13.80,
+                'performance_ytd'    => 0.02,
+                'is_syariah'         => false,
                 'is_active'          => true,
-                'description'        => 'Reksa dana pendapatan tetap syariah yang berfokus pada sukuk negara dan korporasi sesuai prinsip syariah, untuk menghasilkan pendapatan yang relatif stabil.',
-                'base_nav'           => 1930.0,
+                'description'        => 'LiF Bond Plus bertujuan untuk memberikan suatu tingkat pengembalian investasi yang menarik dengan memanfaatkan peluang yang ada di Pasar Obligasi, Pasar Uang dan Pasar Saham dengan tingkat risiko yang minimal serta penekanan pada stabilitas investasi. Kebijakan investasi: 80–98% Efek bersifat utang, 0–18% Efek bersifat ekuitas, 2–20% instrumen pasar uang.',
+                'base_nav'           => 2159.7533,
+                'daily_change_pct'   => -0.20,
             ],
             [
-                'fund_code'          => 'DPFIF',
-                'name'               => 'Danapathi Fixed Income Fund',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'custodian_bank'     => 'Bank Kustodian',
+                'fund_code'          => 'LTFI',
+                'name'               => 'LiF Theologia Fixed Income',
+                'investment_manager' => $manager,
+                'custodian_bank'     => 'PT Bank Negara Indonesia (Persero) Tbk',
                 'fund_type'          => MutualFund::TYPE_FIXED_INCOME,
-                'nav_per_unit'       => 1520.85,
-                'nav_date'           => Carbon::today()->subDay(),
+                'risk_level'         => 2,
+                'nav_per_unit'       => 1715.1946,
+                'nav_date'           => $navDate,
                 'min_subscription'   => 100000,
                 'min_redemption_unit'=> 1,
-                'management_fee'     => 1.5,
-                'subscription_fee'   => 0.00,
-                'redemption_fee'     => 0.00,
-                'total_aum'          => 960000000000,
-                'performance_1yr'    => 7.1,
-                'performance_3yr'    => 21.35,
-                'performance_ytd'    => 4.85,
+                'management_fee'     => 1.25,
+                'subscription_fee'   => 2.50,
+                'redemption_fee'     => 2.50,
+                'total_aum'          => 26183268639.37,
+                'performance_1yr'    => 2.55,
+                'performance_3yr'    => 17.08,
+                'performance_ytd'    => 0.95,
                 'is_syariah'         => false,
                 'is_active'          => true,
-                'description'        => 'Reksa dana pendapatan tetap dengan portofolio obligasi pemerintah dan korporasi berkualitas untuk menghasilkan pendapatan yang relatif stabil dalam jangka menengah.',
-                'base_nav'           => 1418.0,
+                'description'        => 'LiF Theologia Fixed Income (d/h Reksa Dana Corpus Theologia Fixed Income Fund) bertujuan untuk memberikan suatu tingkat pengembalian investasi yang menarik dengan memanfaatkan peluang yang ada di Pasar Obligasi dan Pasar Uang, serta memberikan donasi kepada Yayasan Lembaga Perguruan Tinggi Theologi di Indonesia. Kebijakan investasi: 80–100% Efek bersifat utang, 0–20% instrumen pasar uang. Peraih Best Mutual Fund Awards 2025 & 2026.',
+                'base_nav'           => 1672.5447,
+                'daily_change_pct'   => -0.04,
             ],
             [
-                'fund_code'          => 'DPBAL',
-                'name'               => 'Danapathi Balance Fund',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'custodian_bank'     => 'Bank Kustodian',
+                'fund_code'          => 'LMM',
+                'name'               => 'LiF Money Market',
+                'investment_manager' => $manager,
+                'custodian_bank'     => 'PT Bank KEB Hana Indonesia',
+                'fund_type'          => MutualFund::TYPE_MONEY_MARKET,
+                'risk_level'         => 1,
+                'nav_per_unit'       => 1108.0258,
+                'nav_date'           => $navDate,
+                'min_subscription'   => 100000,
+                'min_redemption_unit'=> 1,
+                'management_fee'     => 0.50,
+                'subscription_fee'   => 0.00,
+                'redemption_fee'     => 0.00,
+                'total_aum'          => 11056557473.57,
+                'performance_1yr'    => 5.66,
+                'performance_3yr'    => null, // diluncurkan 11 Nov 2024
+                'performance_ytd'    => 4.01,
+                'is_syariah'         => false,
+                'is_active'          => true,
+                'description'        => 'LiF Money Market bertujuan untuk mempertahankan nilai investasi awal serta memperoleh likuiditas dan tingkat pengembalian yang sesuai dengan tingkat risiko yang dapat diterima, dengan penempatan portofolio investasi 100% pada instrumen pasar uang dalam negeri dan/atau Efek bersifat utang berjangka waktu tidak lebih dari 1 (satu) tahun dan/atau deposito.',
+                'base_nav'           => 1048.6710,
+                'daily_change_pct'   => 0.01,
+            ],
+            [
+                'fund_code'          => 'LBO',
+                'name'               => 'LiF Balanced Optima',
+                'investment_manager' => $manager,
+                'custodian_bank'     => 'PT Bank KEB Hana Indonesia',
                 'fund_type'          => MutualFund::TYPE_BALANCED,
-                'nav_per_unit'       => 3036.09,
-                'nav_date'           => Carbon::today()->subDay(),
+                'risk_level'         => 3,
+                'nav_per_unit'       => 1117.5116,
+                'nav_date'           => $navDate,
                 'min_subscription'   => 100000,
                 'min_redemption_unit'=> 1,
-                'management_fee'     => 2.0,
-                'subscription_fee'   => 0.00,
-                'redemption_fee'     => 0.00,
-                'total_aum'          => 540000000000,
-                'performance_1yr'    => 8.75,
-                'performance_3yr'    => 24.6,
-                'performance_ytd'    => 5.3,
+                'management_fee'     => 3.00,
+                'subscription_fee'   => 2.50,
+                'redemption_fee'     => 2.50,
+                'total_aum'          => 25670238039.82,
+                'performance_1yr'    => 8.93,
+                'performance_3yr'    => null, // diluncurkan 11 Nov 2024
+                'performance_ytd'    => 6.07,
                 'is_syariah'         => false,
                 'is_active'          => true,
-                'description'        => 'Reksa dana campuran yang menyeimbangkan saham dan efek pendapatan tetap untuk pertumbuhan modal dengan volatilitas yang lebih terjaga.',
-                'base_nav'           => 2790.0,
-            ],
-            [
-                'fund_code'          => 'DPEQG',
-                'name'               => 'Danapathi Equity Growth',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'custodian_bank'     => 'Bank Kustodian',
-                'fund_type'          => MutualFund::TYPE_EQUITY,
-                'nav_per_unit'       => 2857.25,
-                'nav_date'           => Carbon::today()->subDay(),
-                'min_subscription'   => 100000,
-                'min_redemption_unit'=> 1,
-                'management_fee'     => 2.5,
-                'subscription_fee'   => 0.00,
-                'redemption_fee'     => 0.00,
-                'total_aum'          => 1120000000000,
-                'performance_1yr'    => 11.4,
-                'performance_3yr'    => 31.8,
-                'performance_ytd'    => 6.9,
-                'is_syariah'         => false,
-                'is_active'          => true,
-                'description'        => 'Reksa dana saham yang berinvestasi pada saham-saham berfundamental kuat dengan potensi pertumbuhan jangka panjang. Cocok untuk investor agresif dengan horizon investasi di atas 5 tahun.',
-                'base_nav'           => 2560.0,
+                'description'        => 'LiF Balanced Optima bertujuan untuk memberikan tingkat pendapatan investasi yang relatif stabil dengan risiko yang minimal dan terukur melalui investasi pada ekuitas, obligasi dan/atau Efek bersifat utang termasuk instrumen pasar uang.',
+                'base_nav'           => 1025.8988,
+                'daily_change_pct'   => -1.09,
             ],
         ];
 
@@ -204,8 +197,9 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($products as $productData) {
-            $baseNav = $productData['base_nav'];
-            unset($productData['base_nav']);
+            $baseNav   = $productData['base_nav'];
+            $lastDaily = $productData['daily_change_pct'] ?? null;
+            unset($productData['base_nav'], $productData['daily_change_pct']);
 
             // Profil risiko: nilai eksplisit bila ada, jika tidak derive dari jenis
             $productData['risk_level'] = $productData['risk_level']
@@ -217,7 +211,7 @@ class DatabaseSeeder extends Seeder
             );
 
             // Generate histori NAV 365 hari ke belakang
-            $this->generateNavHistory($fund, $baseNav, (float) $productData['nav_per_unit']);
+            $this->generateNavHistory($fund, $baseNav, (float) $productData['nav_per_unit'], $lastDaily);
         }
 
         $this->command->info(count($products) . ' produk reksa dana berhasil di-seed.');
@@ -228,10 +222,12 @@ class DatabaseSeeder extends Seeder
      * Menggunakan random walk dengan tren naik sesuai fund type.
      *
      * @param MutualFund $fund
-     * @param float      $startNav NAV awal (1 tahun lalu)
-     * @param float      $endNav   NAV saat ini
+     * @param float      $startNav  NAV awal (1 tahun lalu)
+     * @param float      $endNav    NAV saat ini
+     * @param float|null $lastDaily Perubahan harian terakhir (%) — bila diisi, 2 titik terakhir
+     *                              dikunci ke NAB & perubahan resmi agar cocok dengan situs klien.
      */
-    private function generateNavHistory(MutualFund $fund, float $startNav, float $endNav): void
+    private function generateNavHistory(MutualFund $fund, float $startNav, float $endNav, ?float $lastDaily = null): void
     {
         // Hitung volatilitas berdasarkan jenis reksa dana
         $volatilityMap = [
@@ -251,8 +247,11 @@ class DatabaseSeeder extends Seeder
         $totalReturn  = ($endNav - $startNav) / $startNav;
         $dailyDrift   = $totalReturn / $days;
 
+        // Histori berakhir di tanggal NAB produk (bukan hari ini) agar cocok dengan "As of" situs klien
+        $endDate = $fund->nav_date ? Carbon::parse($fund->nav_date) : Carbon::today();
+
         for ($i = $days; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
+            $date = $endDate->copy()->subDays($i);
 
             // Skip weekend (pasar tutup Sabtu & Minggu)
             if ($date->isWeekend()) continue;
@@ -270,6 +269,12 @@ class DatabaseSeeder extends Seeder
                 'nav_date'     => $date->toDateString(),
                 'nav_per_unit' => $currentNav,
             ];
+        }
+
+        $last = count($navData) - 1;
+        if ($lastDaily !== null && $last >= 1) {
+            $navData[$last]['nav_per_unit']     = round($endNav, 4);
+            $navData[$last - 1]['nav_per_unit'] = round($endNav / (1 + $lastDaily / 100), 4);
         }
 
         // Hitung nav_change dan nav_change_pct
@@ -307,64 +312,67 @@ class DatabaseSeeder extends Seeder
     {
         $admin = User::where('role', 'super_admin')->first();
 
+        // Diadaptasi dari promo & kegiatan asli LiF (Promo THR, Bulan Inklusi Keuangan, literasi keuangan kampus,
+        // Book Talk Gramedia). Tanggal dibuat relatif agar selalu aktif saat demo.
+        $manager = 'PT LiF Manajemen Investasi';
         $events = [
             [
-                'code'               => 'DANAPATHI-INVESTDAY',
-                'name'               => 'Danapathi Investor Day Jakarta',
-                'description'        => 'Temui tim manajer investasi Danapathi secara langsung dan pelajari strategi alokasi aset reksa dana. Dapatkan insight pasar dan konsultasi portofolio gratis.',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'location'           => 'Ballroom Hotel Mulia, Jakarta Selatan',
-                'event_type'         => 'seminar',
+                'code'               => 'LIF-EXTRA-THR',
+                'name'               => 'Promo Extra THR Reksa Dana LiF',
+                'description'        => "Hi B'LiFers! Investasikan THR Anda di Reksa Dana LiF. Pembelian pertama minimum Rp5.000.000 berhak mendapatkan \"THR\" berupa Unit Penyertaan Reksa Dana LiF senilai maksimal Rp100.000.",
+                'investment_manager' => $manager,
+                'location'           => 'Online — Aplikasi & Website LiF',
+                'event_type'         => Event::TYPE_OTHER,
                 'reward_quota'       => 100,
-                'reward_description' => '100 investor tercepat mendapat e-voucher Rp100.000 dan akses eksklusif sesi tanya jawab dengan Chief Investment Officer Danapathi.',
-                'max_participants'   => 500,
-                'start_at'           => Carbon::now()->addDays(7),
+                'reward_description' => 'Berlaku untuk investor baru, 1x transaksi pembelian per investor (tidak dapat diakumulasikan dan tidak berlaku kelipatan).',
+                'max_participants'   => null,
+                'start_at'           => Carbon::now()->subDay(), // sudah mulai
                 'end_at'             => Carbon::now()->addDays(30),
                 'is_active'          => true,
                 'created_by'         => $admin?->id,
             ],
             [
-                'code'               => 'BOOTH-DANAPATHI-JKT',
-                'name'               => 'Booth Danapathi — Grand Indonesia',
-                'description'        => 'Kunjungi booth Danapathi di Grand Indonesia West Mall dan konsultasikan rencana investasi Anda bersama tim kami. Daftar online untuk antrian prioritas!',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'location'           => 'Grand Indonesia West Mall, Lantai 3, Jakarta Pusat',
-                'event_type'         => 'booth',
-                'reward_quota'       => 50,
-                'reward_description' => '50 pendaftar tercepat mendapat gratis biaya pembelian reksa dana untuk transaksi pertama (max Rp500.000).',
-                'max_participants'   => 200,
-                'start_at'           => Carbon::now()->addDays(3),
-                'end_at'             => Carbon::now()->addDays(10),
-                'is_active'          => true,
-                'created_by'         => $admin?->id,
-            ],
-            [
-                'code'               => 'WEBINAR-DANAPATHI-PU',
-                'name'               => 'Webinar: Reksa Dana Pasar Uang untuk Pemula',
-                'description'        => 'Ikuti webinar online bersama tim edukasi Danapathi dan pelajari cara memulai investasi di Danapathi Money Market Fund dengan modal minimal. Cocok untuk investor pemula.',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'location'           => 'Online via Zoom',
-                'event_type'         => 'webinar',
+                'code'               => 'LIF-BIK',
+                'name'               => 'Promo Bulan Inklusi Keuangan — Reksa Dana LiF',
+                'description'        => 'Meriahkan Bulan Inklusi Keuangan dengan berinvestasi di Reksa Dana LiF. Setiap pembukaan rekening dan pembelian minimum Rp100.000 untuk investor baru berhak mendapatkan souvenir menarik dari LiF.',
+                'investment_manager' => $manager,
+                'location'           => 'Online & Kantor LiF, Menara Batavia Lt. 6, Jakarta Pusat',
+                'event_type'         => Event::TYPE_OTHER,
                 'reward_quota'       => 200,
-                'reward_description' => '200 pendaftar pertama mendapat akses rekaman webinar eksklusif + e-book "Panduan Investasi Reksa Dana" senilai Rp150.000.',
-                'max_participants'   => 1000,
-                'start_at'           => Carbon::now()->subDay(), // sudah mulai
-                'end_at'             => Carbon::now()->addDays(14),
+                'reward_description' => 'Cash back berupa Top Up Unit Penyertaan senilai Rp100.000 untuk investor baru dengan pembelian minimum Rp1.000.000 (tidak berlaku kelipatan).',
+                'max_participants'   => null,
+                'start_at'           => Carbon::now()->addDays(3),
+                'end_at'             => Carbon::now()->addDays(45),
                 'is_active'          => true,
                 'created_by'         => $admin?->id,
             ],
             [
-                'code'               => 'ROADSHOW-DANAPATHI',
-                'name'               => 'Danapathi Roadshow — Kota-kota Indonesia',
-                'description'        => 'Roadshow edukasi investasi reksa dana bersama Danapathi di 5 kota besar. Daftar di kota Anda dan dapatkan analisis portofolio gratis.',
-                'investment_manager' => 'PT Danapathi Asset Management',
-                'location'           => 'Jakarta, Surabaya, Bandung, Medan, Makassar',
-                'event_type'         => 'roadshow',
-                'reward_quota'       => 500,
-                'reward_description' => '500 investor tercepat yang hadir mendapat cashback Rp50.000 untuk pembelian reksa dana perdana.',
-                'max_participants'   => null, // unlimited
+                'code'               => 'LIF-LITERASI-KAMPUS',
+                'name'               => 'Literasi Keuangan: Smart Investment For A Better Life',
+                'description'        => 'Seminar literasi keuangan PT LiF Manajemen Investasi bersama mahasiswa: mengenal reksa dana, profil risiko, dan cara berinvestasi yang benar sejak dini.',
+                'investment_manager' => $manager,
+                'location'           => 'Kampus mitra, Jakarta',
+                'event_type'         => Event::TYPE_SEMINAR,
+                'reward_quota'       => 100,
+                'reward_description' => '100 peserta pertama yang membuka rekening reksa dana LiF mendapat Top Up Unit Penyertaan senilai Rp50.000.',
+                'max_participants'   => 300,
+                'start_at'           => Carbon::now()->addDays(7),
+                'end_at'             => Carbon::now()->addDays(21),
+                'is_active'          => true,
+                'created_by'         => $admin?->id,
+            ],
+            [
+                'code'               => 'LIF-BOOKTALK',
+                'name'               => 'Book Talk & Investasi Bersama LiF',
+                'description'        => 'Bincang buku dan investasi bersama tim PT LiF Manajemen Investasi di Gramedia. Konsultasikan rencana keuangan Anda dan pelajari produk Reksa Dana LiF.',
+                'investment_manager' => $manager,
+                'location'           => 'Gramedia Jalma, Jakarta',
+                'event_type'         => Event::TYPE_BOOTH,
+                'reward_quota'       => 50,
+                'reward_description' => '50 pendaftar pertama yang berinvestasi di Reksa Dana LiF mendapat souvenir eksklusif LiF.',
+                'max_participants'   => 150,
                 'start_at'           => Carbon::now()->addDays(14),
-                'end_at'             => Carbon::now()->addDays(60),
+                'end_at'             => Carbon::now()->addDays(15),
                 'is_active'          => true,
                 'created_by'         => $admin?->id,
             ],

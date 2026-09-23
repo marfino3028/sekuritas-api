@@ -42,7 +42,7 @@ class MutualFund extends Model
         5 => 'Tinggi',
     ];
 
-    protected $appends = ['fund_type_label', 'risk_label'];
+    protected $appends = ['fund_type_label', 'risk_label', 'nav_change_pct'];
 
     protected $fillable = [
         'fund_code',
@@ -170,6 +170,24 @@ class MutualFund extends Model
     public function getRiskLabelAttribute(): string
     {
         return self::RISK_LABELS[$this->risk_level] ?? 'Menengah';
+    }
+
+    /**
+     * Perubahan NAB harian terakhir (%) — untuk strip NAB di beranda.
+     */
+    public function getNavChangePctAttribute(): ?float
+    {
+        // Query agregat (managers) tidak membawa id.
+        if (!$this->id) return null;
+
+        // Cache per request: daftar transaksi/portofolio bisa memuat produk yang sama berulang kali
+        static $cache = [];
+        if (!array_key_exists($this->id, $cache)) {
+            $pct = NavHistory::where('fund_id', $this->id)->orderByDesc('nav_date')->value('nav_change_pct');
+            $cache[$this->id] = $pct === null ? null : (float) $pct;
+        }
+
+        return $cache[$this->id];
     }
 
     /**

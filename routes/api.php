@@ -167,7 +167,12 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 // ============================================================
-// CMS — ADMIN ROUTES (membutuhkan role admin_ops/super_admin)
+// CMS — ADMIN ROUTES (semua role staf; hak per menu di bawah)
+//   super_admin : semua menu + hapus produk/artikel/event
+//   admin       : semua menu, tanpa hapus
+//   admin_ops   : dashboard, KYC, nasabah, produk & NAB, transaksi
+//   finance     : dashboard, transaksi, laporan
+// Samakan dengan sekuritas-cms/composables/usePermissions.ts
 // ============================================================
 Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
 
@@ -179,7 +184,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // Dashboard, transaksi & laporan (dipakai halaman Dashboard/Transactions/Reports CMS)
     Route::get('/dashboard',    [CmsDashboardController::class, 'index']);
     Route::get('/transactions', [CmsTransactionController::class, 'index']);
-    Route::prefix('reports')->group(function () {
+    Route::prefix('reports')->middleware('admin:super_admin,admin,finance')->group(function () {
         Route::get('/transactions', [CmsReportController::class, 'transactions']);
         Route::get('/kyc',          [CmsReportController::class, 'kyc']);
         Route::get('/aum',          [CmsReportController::class, 'aum']);
@@ -190,7 +195,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // --------------------------------------------------------
     // KYC Management
     // --------------------------------------------------------
-    Route::prefix('kyc')->group(function () {
+    Route::prefix('kyc')->middleware('admin:super_admin,admin,admin_ops')->group(function () {
         Route::get('/',               [CmsKycController::class, 'index']);
         Route::get('/{id}',           [CmsKycController::class, 'show']);
         Route::put('/{id}/approve',   [CmsKycController::class, 'approve']);
@@ -201,7 +206,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // --------------------------------------------------------
     // User Management
     // --------------------------------------------------------
-    Route::prefix('users')->group(function () {
+    Route::prefix('users')->middleware('admin:super_admin,admin,admin_ops')->group(function () {
         Route::get('/',              [CmsUserController::class, 'index']);
         Route::get('/{id}',          [CmsUserController::class, 'show']);
         Route::put('/{id}/status',   [CmsUserController::class, 'updateStatus']);
@@ -210,25 +215,25 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // --------------------------------------------------------
     // Product Management (CRUD + NAV/AUM)
     // --------------------------------------------------------
-    Route::prefix('products')->group(function () {
+    Route::prefix('products')->middleware('admin:super_admin,admin,admin_ops')->group(function () {
         Route::get('/',              [CmsProductController::class, 'index']);
         Route::post('/nav-bulk',     [CmsProductController::class, 'updateNavBulk']); // bulk update sebelum /{id}
         Route::get('/{id}',          [CmsProductController::class, 'show']);
         Route::post('/',             [CmsProductController::class, 'store']);
         Route::put('/{id}',          [CmsProductController::class, 'update']);
-        Route::delete('/{id}',       [CmsProductController::class, 'destroy']);
+        Route::delete('/{id}',       [CmsProductController::class, 'destroy'])->middleware('admin:super_admin');
         Route::put('/{id}/nav',      [CmsProductController::class, 'updateNav']);
     });
 
     // --------------------------------------------------------
     // Event Management (CRUD + leaderboard)
     // --------------------------------------------------------
-    Route::prefix('events')->group(function () {
+    Route::prefix('events')->middleware('admin:super_admin,admin')->group(function () {
         Route::get('/',                    [CmsEventController::class, 'index']);
         Route::post('/',                   [CmsEventController::class, 'store']);
         Route::get('/{id}',                [CmsEventController::class, 'show']);
         Route::put('/{id}',                [CmsEventController::class, 'update']);
-        Route::delete('/{id}',             [CmsEventController::class, 'destroy']);
+        Route::delete('/{id}',             [CmsEventController::class, 'destroy'])->middleware('admin:super_admin');
         Route::put('/{id}/toggle',         [CmsEventController::class, 'toggle']);
         Route::post('/{id}/banner',        [CmsEventController::class, 'uploadBanner']);
         Route::get('/{id}/leaderboard',    [CmsEventController::class, 'leaderboard']);
@@ -238,12 +243,12 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // --------------------------------------------------------
     // Article Management (CRUD + publish toggle)
     // --------------------------------------------------------
-    Route::prefix('articles')->group(function () {
+    Route::prefix('articles')->middleware('admin:super_admin,admin')->group(function () {
         Route::get('/',            [CmsArticleController::class, 'index']);
         Route::post('/',           [CmsArticleController::class, 'store']);
         Route::get('/{id}',        [CmsArticleController::class, 'show']);
         Route::put('/{id}',        [CmsArticleController::class, 'update']);
-        Route::delete('/{id}',     [CmsArticleController::class, 'destroy']);
+        Route::delete('/{id}',     [CmsArticleController::class, 'destroy'])->middleware('admin:super_admin');
         Route::put('/{id}/toggle', [CmsArticleController::class, 'toggle']);
     });
 });

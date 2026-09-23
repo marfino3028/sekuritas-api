@@ -1,5 +1,5 @@
-@php $blue = '#198754'; @endphp
-<x-mail-layout title="Lengkapi Akun — Danapathi Asset Management">
+@php $blue = '#1D5191'; @endphp
+<x-mail-layout title="Lengkapi Akun — LiF Manajemen Investasi">
     <p style="margin:0 0 16px;">Kepada Nasabah Yang Terhormat / <em>Dear Valued Customer</em>,</p>
 
     <p style="margin:0 0 16px;">
@@ -12,7 +12,7 @@
         <em>we attach application forms that must be signed</em>:
     </p>
     <ul style="margin:0 0 20px;padding-left:18px;font-size:14px;line-height:26px;">
-        <li>Formulir Pembukaan Rekening Reksa Dana Danapathi — <a href="{{ $linkEfek ?? '#' }}" style="color:{{ $blue }};">Unduh</a></li>
+        <li>Formulir Pembukaan Rekening Reksa Dana LiF — <a href="{{ $linkEfek ?? '#' }}" style="color:{{ $blue }};">Unduh</a></li>
         <li>Formulir Profil Risiko Pemodal — <a href="{{ $linkRdn ?? '#' }}" style="color:{{ $blue }};">Unduh</a></li>
         @isset($linkTax)<li>Formulir W-8BEN / W-9 / CRS — <a href="{{ $linkTax }}" style="color:{{ $blue }};">Unduh</a></li>@endisset
     </ul>
@@ -25,11 +25,11 @@
 
     <p style="margin:0 0 4px;font-size:13px;">Dokumen dikirimkan ke / <em>Documents send to</em>:</p>
     <p style="margin:0 0 20px;font-size:13px;line-height:22px;">
-        Up. Customer Service — PT Danapathi Asset Management<br>
+        Up. Customer Service — PT LiF Manajemen Investasi<br>
         (Manajer Investasi berizin dan diawasi OJK)
     </p>
 
     <p style="margin:0;font-size:13px;">
-        Pertanyaan? Hubungi Client Services kami melalui telepon atau email resmi Danapathi Asset Management.
+        Pertanyaan? Hubungi Client Services kami melalui telepon atau email resmi LiF Manajemen Investasi.
     </p>
 </x-mail-layout>
