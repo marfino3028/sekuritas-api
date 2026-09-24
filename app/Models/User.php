@@ -18,6 +18,16 @@ class User extends Authenticatable implements JWTSubject
     const ROLE_USER        = 'user';
     const ROLE_ADMIN_OPS   = 'admin_ops';
     const ROLE_SUPER_ADMIN = 'super_admin';
+    const ROLE_ADMIN       = 'admin';
+    const ROLE_FINANCE     = 'finance';
+
+    /** Semua role staf yang boleh login ke CMS (hak per menu diatur di routes/api.php). */
+    const STAFF_ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+        self::ROLE_ADMIN_OPS,
+        self::ROLE_FINANCE,
+    ];
 
     // ============================================
     // Konstanta Status Akun
@@ -156,10 +166,10 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Cek apakah user adalah admin (ops atau super admin).
+     * Cek apakah user adalah staf CMS (super admin, admin, ops, atau finance).
      */
     public function isAdmin(): bool
     {
-        return in_array($this->role, [self::ROLE_ADMIN_OPS, self::ROLE_SUPER_ADMIN]);
+        return in_array($this->role, self::STAFF_ROLES, true);
     }
 }

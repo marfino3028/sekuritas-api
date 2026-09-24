@@ -8,11 +8,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
- * AdminMiddleware — Pastikan user yang mengakses CMS adalah admin.
+ * AdminMiddleware — Pastikan user yang mengakses CMS adalah staf.
+ *
+ *   'admin'                       → semua role staf (super_admin, admin, admin_ops, finance)
+ *   'admin:super_admin,admin'     → hanya role yang disebut
  */
 class AdminMiddleware
 {
-    public function handle(Request $request, Closure $next, string $role = 'admin'): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
@@ -30,17 +33,17 @@ class AdminMiddleware
             ], 401);
         }
 
-        if ($role === 'super_admin' && $user->role !== 'super_admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya Super Admin yang bisa mengakses resource ini.',
-            ], 403);
-        }
-
         if (!$user->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Akses ditolak. Anda tidak memiliki hak akses admin.',
+            ], 403);
+        }
+
+        if ($roles && !in_array($user->role, $roles, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role Anda tidak memiliki akses ke menu ini.',
             ], 403);
         }
 

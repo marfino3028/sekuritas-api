@@ -45,6 +45,19 @@ class PromoAuthTest extends TestCase
         $this->assertNull($user->activation_token);
     }
 
+    public function test_register_email_auto_activates_when_mail_is_only_logged(): void
+    {
+        config(['mail.default' => 'log']);
+
+        $this->postJson('/api/auth/register-email', ['email' => 'demo@mail.test', 'password' => 'Rahasia123'])
+            ->assertCreated()
+            ->assertJsonPath('data.auto_activated', true);
+
+        $this->postJson('/api/auth/login-email', ['email' => 'demo@mail.test', 'password' => 'Rahasia123'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+    }
+
     public function test_user_can_register_to_active_event_via_code(): void
     {
         $event = Event::create([

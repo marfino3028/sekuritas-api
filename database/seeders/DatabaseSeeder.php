@@ -41,37 +41,39 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Seed akun admin.
+     * Akun staf CMS — satu per role. Password dari env (DEMO_*_PASSWORD) bila diisi.
+     *   superadmin@ & admin@  → DEMO_ADMIN_PASSWORD   (default Admin@123456)
+     *   ops@ & finance@       → DEMO_OPS_PASSWORD     (default Ops@123456)
      */
+    public const STAFF_ACCOUNTS = [
+        ['email' => 'superadmin@danapathi-demo.id', 'name' => 'Super Admin',       'role' => User::ROLE_SUPER_ADMIN, 'phone' => '081234567890', 'pw' => 'admin'],
+        ['email' => 'admin@danapathi-demo.id',      'name' => 'Admin Danapathi',   'role' => User::ROLE_ADMIN,       'phone' => '081234567892', 'pw' => 'admin'],
+        ['email' => 'ops@danapathi-demo.id',        'name' => 'Admin Operasional', 'role' => User::ROLE_ADMIN_OPS,   'phone' => '081234567891', 'pw' => 'ops'],
+        ['email' => 'finance@danapathi-demo.id',    'name' => 'Staf Finance',      'role' => User::ROLE_FINANCE,     'phone' => '081234567893', 'pw' => 'ops'],
+    ];
+
     private function seedAdminUsers(): void
     {
-        // Super Admin
-        User::firstOrCreate(
-            ['email' => 'superadmin@danapathi-demo.id'],
-            [
-                'name'              => 'Super Admin',
-                'phone'             => '081234567890',
-                'password'          => Hash::make(env('DEMO_ADMIN_PASSWORD') ?: 'Admin@123456'),
-                'role'              => User::ROLE_SUPER_ADMIN,
-                'status'            => User::STATUS_ACTIVE,
-                'email_verified_at' => Carbon::now(),
-            ]
-        );
+        $passwords = [
+            'admin' => env('DEMO_ADMIN_PASSWORD') ?: 'Admin@123456',
+            'ops'   => env('DEMO_OPS_PASSWORD') ?: 'Ops@123456',
+        ];
 
-        // Admin Ops
-        User::firstOrCreate(
-            ['email' => 'ops@danapathi-demo.id'],
-            [
-                'name'              => 'Admin Operasional',
-                'phone'             => '081234567891',
-                'password'          => Hash::make(env('DEMO_OPS_PASSWORD') ?: 'Ops@123456'),
-                'role'              => User::ROLE_ADMIN_OPS,
-                'status'            => User::STATUS_ACTIVE,
-                'email_verified_at' => Carbon::now(),
-            ]
-        );
+        foreach (self::STAFF_ACCOUNTS as $account) {
+            User::firstOrCreate(
+                ['email' => $account['email']],
+                [
+                    'name'              => $account['name'],
+                    'phone'             => $account['phone'],
+                    'password'          => Hash::make($passwords[$account['pw']]),
+                    'role'              => $account['role'],
+                    'status'            => User::STATUS_ACTIVE,
+                    'email_verified_at' => Carbon::now(),
+                ]
+            );
+        }
 
-        $this->command->info('Admin users berhasil di-seed.');
+        $this->command->info(count(self::STAFF_ACCOUNTS) . ' akun staf CMS berhasil di-seed.');
     }
 
     /**

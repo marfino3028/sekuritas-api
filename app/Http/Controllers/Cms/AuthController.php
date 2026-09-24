@@ -52,7 +52,7 @@ class AuthController extends Controller
 
         // Hanya admin yang bisa masuk ke CMS
         if (!$user->isAdmin()) {
-            JWTAuth::invalidate();
+            JWTAuth::setToken($token)->invalidate();
             return response()->json([
                 'success' => false,
                 'message' => 'Akses ditolak. Anda tidak memiliki hak akses ke panel admin.',
@@ -60,7 +60,7 @@ class AuthController extends Controller
         }
 
         if ($user->status === User::STATUS_SUSPENDED) {
-            JWTAuth::invalidate();
+            JWTAuth::setToken($token)->invalidate();
             return response()->json([
                 'success' => false,
                 'message' => 'Akun Anda telah disuspend.',

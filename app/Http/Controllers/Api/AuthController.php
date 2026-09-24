@@ -209,6 +209,13 @@ class AuthController extends Controller
             ], 409);
         }
 
+        // Server demo tanpa SMTP (MAIL_MAILER=log): email aktivasi tidak pernah sampai ke pendaftar,
+        // jadi akun langsung aktif. Bisa dipaksa lewat REGISTER_AUTO_ACTIVATE=true/false.
+        $autoActivate = filter_var(
+            env('REGISTER_AUTO_ACTIVATE', config('mail.default') === 'log'),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
         $token = Str::random(64);
 
         $user = User::updateOrCreate(
@@ -217,10 +224,20 @@ class AuthController extends Controller
                 'name'             => $request->name ?? explode('@', $request->email)[0],
                 'password'         => Hash::make($request->password),
                 'role'             => User::ROLE_USER,
-                'status'           => User::STATUS_PENDING,
-                'activation_token' => $token,
+                'status'           => $autoActivate ? User::STATUS_ACTIVE : User::STATUS_PENDING,
+                'activation_token' => $autoActivate ? null : $token,
+                'email_verified_at' => $autoActivate ? Carbon::now() : null,
+                'activated_at'     => $autoActivate ? Carbon::now() : null,
             ]
         );
+
+        if ($autoActivate) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrasi berhasil. Akun Anda sudah aktif, silakan login.',
+                'data'    => ['email' => $user->email, 'auto_activated' => true],
+            ], 201);
+        }
 
         // Kirim email aktivasi (gagal email tidak menggagalkan registrasi)
         $activationUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/')
