@@ -107,6 +107,14 @@ class KycController extends Controller
                 'email'       => $kyc->user?->email,
                 'phone'       => $kyc->user?->phone,
                 'reviewed_by' => $kyc->reviewer?->name,
+                // SID/IFUA & profil risiko ada di tabel users; rekening bank di additional_info (form eKYC)
+                'sid'          => $kyc->user?->sid_number,
+                'ifua'         => $kyc->user?->ifua_number,
+                'risk_profile' => ['conservative' => 'Konservatif', 'moderate' => 'Moderat', 'aggressive' => 'Agresif']
+                    [$kyc->user?->risk_profile_result ?? ''] ?? null,
+                'bank_name'      => data_get($kyc->additional_info, 'bank_name'),
+                'account_number' => data_get($kyc->additional_info, 'bank_account_number'),
+                'account_name'   => data_get($kyc->additional_info, 'bank_account_name'),
                 // URL dokumen (frontend CMS memakai nama tanpa _path)
                 'ktp_photo'       => $url($kyc->ktp_photo_path),
                 'selfie_photo'    => $url($kyc->selfie_photo_path),
