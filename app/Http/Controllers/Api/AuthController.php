@@ -211,10 +211,11 @@ class AuthController extends Controller
 
         // Server demo tanpa SMTP (MAIL_MAILER=log): email aktivasi tidak pernah sampai ke pendaftar,
         // jadi akun langsung aktif. Bisa dipaksa lewat REGISTER_AUTO_ACTIVATE=true/false.
-        $autoActivate = filter_var(
-            env('REGISTER_AUTO_ACTIVATE', config('mail.default') === 'log'),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        // Nilai kosong (docker compose meneruskan "") dianggap tidak diatur.
+        $flag = env('REGISTER_AUTO_ACTIVATE');
+        $autoActivate = ($flag === null || $flag === '')
+            ? config('mail.default') === 'log'
+            : filter_var($flag, FILTER_VALIDATE_BOOLEAN);
 
         $token = Str::random(64);
 
