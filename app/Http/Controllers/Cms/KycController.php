@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\Kyc;
 use App\Services\SInvestService;
+use App\Support\Notify;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -145,6 +146,8 @@ class KycController extends Controller
             'reviewed_at' => Carbon::now(),
         ]);
 
+        Notify::kycApproved($kyc->user);
+
         Log::info("[CMS] KYC disetujui (SID belum diterbitkan)", [
             'kyc_id'   => $kyc->id,
             'user_id'  => $kyc->user_id,
@@ -197,6 +200,8 @@ class KycController extends Controller
 
         try {
             $sidResult = $this->sInvestService->generateSid($kyc->user_id);
+
+            Notify::sidIssued($kyc->user->fresh());
 
             Log::info("[CMS] SID diterbitkan ke S-INVEST", [
                 'kyc_id'     => $kyc->id,
@@ -272,6 +277,8 @@ class KycController extends Controller
             'reviewed_by'     => $admin->id,
             'reviewed_at'     => Carbon::now(),
         ]);
+
+        Notify::kycRejected($kyc->user, $request->rejected_reason);
 
         Log::info("[CMS] KYC ditolak", [
             'kyc_id'   => $kyc->id,

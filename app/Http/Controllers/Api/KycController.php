@@ -167,6 +167,8 @@ class KycController extends Controller
             $kycData
         );
 
+        \App\Support\Notify::kycSubmitted($user);
+
         return response()->json([
             'success' => true,
             'message' => 'Data KYC berhasil disubmit. Tim kami akan memverifikasi dalam 1x24 jam.',
