@@ -232,6 +232,8 @@ class AuthController extends Controller
         );
 
         if ($autoActivate) {
+            \App\Support\Notify::welcome($user);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Registrasi berhasil. Akun Anda sudah aktif, silakan login.',

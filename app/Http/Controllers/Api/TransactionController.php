@@ -115,6 +115,8 @@ class TransactionController extends Controller
                 $request->payment_method
             );
 
+            \App\Support\Notify::subscriptionCreated($transaction, $paymentData);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi pembelian berhasil dibuat. Segera lakukan pembayaran.',

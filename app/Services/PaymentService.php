@@ -191,6 +191,8 @@ class PaymentService
             $this->allocateRedemption($transaction, $units);
         }
 
+        \App\Support\Notify::transactionSettled($transaction->fresh());
+
         Log::info("[Payment] Transaksi berhasil diproses", [
             'transaction_id' => $transaction->id,
             'order_number'   => $transaction->order_number,
