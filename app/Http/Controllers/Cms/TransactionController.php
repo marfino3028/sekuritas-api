@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
- * CMS TransactionController — daftar transaksi seluruh nasabah (read-only).
+ * CMS TransactionController — daftar transaksi seluruh nasabah + proses order ke S-INVEST.
  *
  * Query params: status, type, date_from, date_to, search (order/nama/email), user_id, per_page.
  * Status `completed` di UI CMS dipetakan ke status `settled` di database.
@@ -76,6 +80,52 @@ class TransactionController extends Controller
                 'completed'   => Transaction::where('status', Transaction::STATUS_SETTLED)->count(),
                 'failed'      => Transaction::where('status', Transaction::STATUS_FAILED)->count(),
                 'totalVolume' => (float) Transaction::where('status', Transaction::STATUS_SETTLED)->sum('amount'),
+            ],
+        ]);
+    }
+
+    /**
+     * Kirim order (pembelian yang sudah dibayar / penjualan) ke S-INVEST lalu alokasikan unit.
+     * Di produksi: order di-upload ke S-INVEST (KSEI), bank kustodian menghitung unit dengan
+     * NAB hari bursa, lalu konfirmasi kembali. Mode demo (SINVEST_DRIVER=mock) langsung selesai.
+     *
+     * POST /api/cms/transactions/{id}/process
+     */
+    public function process(int $id, PaymentService $payments): JsonResponse
+    {
+        $transaction = Transaction::with(['user:id,name,email', 'fund'])->findOrFail($id);
+
+        if ($transaction->status !== Transaction::STATUS_PAID) {
+            $hint = $transaction->status === Transaction::STATUS_PENDING
+                ? 'Nasabah belum membayar.'
+                : "Transaksi berstatus '{$transaction->status}'.";
+
+            return response()->json([
+                'success' => false,
+                'message' => "Order tidak bisa dikirim ke S-INVEST. {$hint}",
+            ], 400);
+        }
+
+        DB::transaction(fn () => $payments->processTransaction($transaction));
+        $transaction->refresh();
+
+        Log::info('[CMS] Order dikirim ke S-INVEST & unit dialokasikan', [
+            'transaction_id' => $transaction->id,
+            'order_number'   => $transaction->order_number,
+            'admin_id'       => JWTAuth::user()?->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Order {$transaction->order_number} berhasil diproses S-INVEST. Unit sudah "
+                . ($transaction->type === Transaction::TYPE_SUBSCRIPTION ? 'masuk ke' : 'dikurangi dari')
+                . " portofolio {$transaction->user?->name}.",
+            'data'    => [
+                'id'        => $transaction->id,
+                'status'    => 'completed',
+                'units'     => $transaction->units,
+                'nav_price' => $transaction->nav_price,
+                'amount'    => $transaction->amount,
             ],
         ]);
     }

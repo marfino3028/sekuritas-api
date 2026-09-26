@@ -189,8 +189,15 @@ class TransactionController extends Controller
             ->where('fund_id', $fund->id)
             ->first();
 
-        if (!$portfolio || (float) $portfolio->total_units < $units) {
-            $available = $portfolio ? $portfolio->total_units : 0;
+        // Unit yang sedang dalam antrean penjualan (belum diproses ke S-INVEST) tidak bisa dijual lagi
+        $pendingUnits = (float) Transaction::where('user_id', $user->id)->where('fund_id', $fund->id)
+            ->where('type', Transaction::TYPE_REDEMPTION)
+            ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_PROCESSING])
+            ->sum('units');
+        $availableUnits = $portfolio ? (float) $portfolio->total_units - $pendingUnits : 0;
+
+        if ($availableUnits + 1e-9 < $units) {
+            $available = round(max(0, $availableUnits), 4);
             return response()->json([
                 'success' => false,
                 'message' => "Unit tidak mencukupi. Unit tersedia: {$available} unit.",
@@ -213,16 +220,15 @@ class TransactionController extends Controller
                 'units'      => $units,
                 'nav_price'  => $navPrice,
                 'fee_amount' => $feeAmount,
-                'status'     => Transaction::STATUS_PAID, // Redemption langsung paid
-                'notes'      => "Redemption {$units} unit @ NAV {$navPrice}",
+                'status'     => Transaction::STATUS_PAID, // menunggu diproses ke S-INVEST oleh Ops
+                'notes'      => "Redemption {$units} unit @ estimasi NAV {$navPrice}",
             ]);
 
-            // Langsung proses redemption (tidak butuh pembayaran dari user)
-            $this->paymentService->processTransaction($transaction);
+            \App\Support\Notify::redemptionReceived($transaction);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Penjualan reksa dana berhasil diproses.',
+                'message' => 'Permintaan penjualan diterima. Diproses ke S-INVEST oleh tim Operasional; dana dikirim ke rekening bank Anda.',
                 'data'    => [
                     'transaction_id' => $transaction->fresh()->id,
                     'order_number'   => $transaction->order_number,
@@ -232,8 +238,8 @@ class TransactionController extends Controller
                     'gross_amount'   => $amount,
                     'fee_amount'     => $feeAmount,
                     'net_diterima'   => $netAmount,
-                    'status'         => Transaction::STATUS_SETTLED,
-                    'estimated_dana' => '2-3 hari kerja',
+                    'status'         => Transaction::STATUS_PAID,
+                    'estimated_dana' => 'maks. 7 hari bursa setelah diproses (umumnya 2-3 hari kerja)',
                 ],
             ], 201);
         });
