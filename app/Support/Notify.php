@@ -106,6 +106,34 @@ class Notify
         ], $details, ['label' => 'Lihat Transaksi', 'url' => self::url('/transaksi')]);
     }
 
+    public static function paymentReceived(Transaction $t): void
+    {
+        $t->loadMissing('fund', 'user');
+        self::send($t->user, 'Pembayaran Diterima', [
+            'Pembayaran pembelian reksa dana Anda sudah kami terima.',
+            'Order Anda diteruskan ke S-INVEST (KSEI) dan bank kustodian. Unit penyertaan masuk ke portofolio setelah diproses dengan NAB hari bursa yang berlaku.',
+        ], [
+            'No. Order' => (string) $t->order_number,
+            'Produk'    => (string) $t->fund?->name,
+            'Nominal'   => self::rupiah($t->amount),
+            'Status'    => 'Dibayar — menunggu proses S-INVEST',
+        ], ['label' => 'Lihat Transaksi', 'url' => self::url('/transaksi')]);
+    }
+
+    public static function redemptionReceived(Transaction $t): void
+    {
+        $t->loadMissing('fund', 'user');
+        self::send($t->user, 'Permintaan Penjualan Diterima', [
+            'Permintaan penjualan kembali (redemption) unit reksa dana Anda sudah kami terima dan akan diteruskan ke S-INVEST (KSEI).',
+            'Nilai akhir dihitung dengan NAB hari bursa saat order diproses. Dana dikirim ke rekening bank terdaftar Anda.',
+        ], [
+            'No. Order' => (string) $t->order_number,
+            'Produk'    => (string) $t->fund?->name,
+            'Unit'      => number_format((float) $t->units, 4, ',', '.'),
+            'Estimasi'  => self::rupiah($t->amount),
+        ], ['label' => 'Lihat Transaksi', 'url' => self::url('/transaksi')]);
+    }
+
     public static function transactionSettled(Transaction $t): void
     {
         $t->loadMissing('fund', 'user');

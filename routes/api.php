@@ -184,6 +184,8 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
     // Dashboard, transaksi & laporan (dipakai halaman Dashboard/Transactions/Reports CMS)
     Route::get('/dashboard',    [CmsDashboardController::class, 'index']);
     Route::get('/transactions', [CmsTransactionController::class, 'index']);
+    Route::post('/transactions/{id}/process', [CmsTransactionController::class, 'process'])
+        ->middleware('admin:super_admin,admin,admin_ops'); // kirim order ke S-INVEST
     Route::prefix('reports')->middleware('admin:super_admin,admin,finance')->group(function () {
         Route::get('/transactions', [CmsReportController::class, 'transactions']);
         Route::get('/kyc',          [CmsReportController::class, 'kyc']);

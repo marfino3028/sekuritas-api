@@ -135,14 +135,14 @@ class PaymentService
                 ]);
             }
 
-            // Update status transaksi ke paid, lalu proses
+            // Tandai sudah dibayar. Unit belum dialokasikan: order diteruskan ke S-INVEST oleh tim
+            // Operasional di CMS (Transaksi → "Kirim ke S-INVEST"), sama seperti alur MI sebenarnya.
             $transaction->update([
                 'status'               => Transaction::STATUS_PAID,
                 'payment_confirmed_at' => $confirmedAt,
             ]);
 
-            // Langsung proses alokasi unit (di production bisa pakai queue/job)
-            $this->processTransaction($transaction);
+            \App\Support\Notify::paymentReceived($transaction->fresh());
 
             Log::info("[Payment Mock] Pembayaran dikonfirmasi", [
                 'transaction_id' => $transaction->id,
@@ -154,9 +154,9 @@ class PaymentService
                 'success'        => true,
                 'transaction_id' => $transaction->id,
                 'order_number'   => $transaction->order_number,
-                'status'         => Transaction::STATUS_SETTLED,
+                'status'         => Transaction::STATUS_PAID,
                 'confirmed_at'   => $confirmedAt,
-                'message'        => 'Pembayaran berhasil dikonfirmasi dan unit telah dialokasikan.',
+                'message'        => 'Pembayaran diterima. Order diteruskan ke S-INVEST; unit masuk ke portofolio setelah diproses tim Operasional.',
             ];
         });
     }
@@ -172,14 +172,26 @@ class PaymentService
         $transaction->update(['status' => Transaction::STATUS_PROCESSING]);
 
         $fund       = $transaction->fund;
-        $navPrice   = $fund->nav_per_unit; // Gunakan NAV terkini (T+1 dalam production)
-        $units      = round($transaction->amount / $navPrice, 8);
+        $navPrice   = (float) $fund->nav_per_unit; // NAB terkini saat order diproses (di produksi: NAB hari bursa order)
         $settledAt  = Carbon::now();
+
+        if ($transaction->type === Transaction::TYPE_REDEMPTION) {
+            // Penjualan: unit tetap sesuai permintaan nasabah, nilai rupiah dihitung ulang dengan NAB proses
+            $units  = (float) $transaction->units;
+            $amount = round($units * $navPrice, 2);
+            $fee    = round($amount * ((float) $fund->redemption_fee / 100), 2);
+        } else {
+            $units  = round($transaction->amount / $navPrice, 8);
+            $amount = (float) $transaction->amount;
+            $fee    = (float) $transaction->fee_amount;
+        }
 
         // Update data transaksi: isi unit & NAV yang digunakan
         $transaction->update([
             'nav_price'  => $navPrice,
             'units'      => $units,
+            'amount'     => $amount,
+            'fee_amount' => $fee,
             'status'     => Transaction::STATUS_SETTLED,
             'settled_at' => $settledAt,
         ]);
