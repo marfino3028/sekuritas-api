@@ -33,7 +33,7 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => ['Content-Disposition'], // nama file unduhan laporan,
+    'exposed_headers' => ['Content-Disposition'], // nama file unduhan laporan
 
     'max_age' => 0,
 
