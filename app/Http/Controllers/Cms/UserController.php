@@ -75,7 +75,12 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'stats'   => $stats,
-            'data'    => $users->items(),
+            // Kolom datar yang dibaca tabel CMS (status KYC & SID ada di relasi / kolom sid_number)
+            'data'    => collect($users->items())->map(fn (User $u) => array_merge($u->toArray(), [
+                'kyc_status' => $u->kyc?->status ?? 'none',
+                'sid'        => $u->sid_number,
+                'ifua'       => $u->ifua_number,
+            ])),
             'meta'    => [
                 'current_page' => $users->currentPage(),
                 'last_page'    => $users->lastPage(),
@@ -107,10 +112,47 @@ class UserController extends Controller
             'total_investasi' => $user->portfolios()->sum('total_invested'),
         ];
 
+        $kyc = $user->kyc;
+        $occupations = [
+            'pns' => 'PNS', 'tni_polri' => 'TNI/Polri', 'karyawan_swasta' => 'Karyawan Swasta', 'wiraswasta' => 'Wiraswasta',
+            'profesional' => 'Profesional', 'ibu_rumah_tangga' => 'Ibu Rumah Tangga', 'pelajar' => 'Pelajar/Mahasiswa',
+            'pensiunan' => 'Pensiunan', 'other' => 'Lainnya',
+        ];
+        $risk = $user->risk_profile_result ?? $user->riskProfile?->result;
+
+        $recent = $user->transactions()->with('fund:id,name')->latest()->limit(5)->get()
+            ->map(fn ($t) => [
+                'id'           => $t->id,
+                'product_name' => $t->fund?->name,
+                'type'         => $t->type,
+                'amount'       => $t->amount,
+                'status'       => $t->status === 'settled' ? 'completed' : $t->status,
+                'created_at'   => $t->created_at,
+            ]);
+
         return response()->json([
             'success' => true,
             'data'    => array_merge($user->toArray(), [
                 'transaksi_stats' => $transaksiStats,
+                // Kolom datar yang dibaca halaman Detail User CMS
+                'kyc_id'          => $kyc?->id,
+                'kyc_status'      => $kyc?->status ?? 'none',
+                'nik'             => $kyc?->nik,
+                'birth_date'      => $kyc?->birth_date,
+                'gender'          => $kyc?->gender,
+                'occupation'      => $occupations[$kyc?->occupation ?? ''] ?? $kyc?->occupation,
+                'risk_profile'    => ['conservative' => 'Konservatif', 'moderate' => 'Moderat', 'aggressive' => 'Agresif'][$risk ?? ''] ?? null,
+                'sid'             => $user->sid_number,
+                'ifua'            => $user->ifua_number,
+                'bank_name'       => data_get($kyc?->additional_info, 'bank_name'),
+                'account_number'  => data_get($kyc?->additional_info, 'bank_account_number'),
+                'account_name'    => data_get($kyc?->additional_info, 'bank_account_name'),
+                'is_active'       => $user->status === User::STATUS_ACTIVE,
+                'last_login'      => $user->activated_at ?? $user->email_verified_at,
+                'tx_count'        => $transaksiStats['total'],
+                'total_invested'  => (float) $transaksiStats['total_investasi'],
+                'active_products' => $user->portfolios()->where('total_units', '>', 0)->count(),
+                'recent_transactions' => $recent,
             ]),
         ]);
     }

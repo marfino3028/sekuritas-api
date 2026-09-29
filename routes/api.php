@@ -225,6 +225,7 @@ Route::prefix('cms')->middleware(['auth:api', 'admin'])->group(function () {
         Route::put('/{id}',          [CmsProductController::class, 'update']);
         Route::delete('/{id}',       [CmsProductController::class, 'destroy'])->middleware('admin:super_admin');
         Route::put('/{id}/nav',      [CmsProductController::class, 'updateNav']);
+        Route::post('/{id}/toggle',  [CmsProductController::class, 'toggle']);
     });
 
     // --------------------------------------------------------

@@ -27,8 +27,9 @@ class ProductController extends Controller
     {
         $query = MutualFund::query();
 
-        if ($request->filled('type')) {
-            $query->where('fund_type', $request->type);
+        // CMS mengirim fund_type; 'type' tetap diterima untuk kompatibilitas
+        if ($type = $request->input('fund_type', $request->input('type'))) {
+            $query->where('fund_type', $type);
         }
 
         if ($request->filled('is_active')) {
@@ -49,7 +50,10 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $funds->items(),
+            // 'aum' = alias total_aum yang dibaca tabel CMS
+            'data'    => collect($funds->items())->map(fn (MutualFund $f) => array_merge($f->toArray(), [
+                'aum' => (float) $f->total_aum,
+            ])),
             'meta'    => [
                 'current_page' => $funds->currentPage(),
                 'last_page'    => $funds->lastPage(),
@@ -407,5 +411,21 @@ class ProductController extends Controller
             'results' => $results,
             'errors'  => $errors,
         ], empty($errors) ? 200 : 207);
+    }
+
+    /**
+     * Aktifkan / nonaktifkan produk (produk nonaktif tidak tampil & tidak bisa dibeli di web).
+     * POST /api/cms/products/{id}/toggle
+     */
+    public function toggle(int $id): JsonResponse
+    {
+        $fund = MutualFund::findOrFail($id);
+        $fund->update(['is_active' => ! $fund->is_active]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Produk {$fund->name} " . ($fund->is_active ? 'diaktifkan.' : 'dinonaktifkan.'),
+            'data'    => ['id' => $fund->id, 'is_active' => $fund->is_active],
+        ]);
     }
 }
