@@ -138,7 +138,7 @@ class UserController extends Controller
                 'kyc_id'          => $kyc?->id,
                 'kyc_status'      => $kyc?->status ?? 'none',
                 'nik'             => $kyc?->nik,
-                'birth_date'      => $kyc?->birth_date,
+                'birth_date'      => $kyc?->birth_date ? \Illuminate\Support\Carbon::parse($kyc->birth_date)->format('Y-m-d') : null,
                 'gender'          => $kyc?->gender,
                 'occupation'      => $occupations[$kyc?->occupation ?? ''] ?? $kyc?->occupation,
                 'risk_profile'    => ['conservative' => 'Konservatif', 'moderate' => 'Moderat', 'aggressive' => 'Agresif'][$risk ?? ''] ?? null,
