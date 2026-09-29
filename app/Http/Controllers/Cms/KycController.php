@@ -39,22 +39,26 @@ class KycController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Kyc::with(['user:id,name,email,phone,status,created_at'])
+        $query = Kyc::with(['user:id,name,email,phone,status,sid_status,sid_number,created_at'])
             ->latest('submitted_at');
 
-        // Filter status
-        $status = $request->input('status', 'pending');
-        if ($status !== 'all') {
+        // Filter status: all (default), pending, approved, rejected,
+        // sid_pending = sudah disetujui tapi belum dikirim ke S-INVEST (SID belum terbit)
+        $status = $request->input('status', 'all');
+        if ($status === 'sid_pending') {
+            $query->where('status', Kyc::STATUS_APPROVED)
+                ->whereHas('user', fn ($q) => $q->where('sid_status', '!=', \App\Models\User::SID_ACTIVE));
+        } elseif ($status !== 'all') {
             $query->where('status', $status);
         }
 
-        // Filter pencarian
+        // Filter pencarian (dibungkus agar tidak menimpa filter status)
         if ($request->filled('search')) {
             $keyword = $request->search;
-            $query->whereHas('user', function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('email', 'like', "%{$keyword}%");
-            })->orWhere('nik', 'like', "%{$keyword}%");
+            $query->where(function ($q) use ($keyword) {
+                $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                  ->orWhere('nik', 'like', "%{$keyword}%");
+            });
         }
 
         $perPage = min((int) $request->input('per_page', 20), 100);
@@ -65,6 +69,8 @@ class KycController extends Controller
             'pending'  => Kyc::where('status', 'pending')->count(),
             'approved' => Kyc::where('status', 'approved')->count(),
             'rejected' => Kyc::where('status', 'rejected')->count(),
+            'sid_pending' => Kyc::where('status', 'approved')
+                ->whereHas('user', fn ($q) => $q->where('sid_status', '!=', \App\Models\User::SID_ACTIVE))->count(),
         ];
 
         return response()->json([
