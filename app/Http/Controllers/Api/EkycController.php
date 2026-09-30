@@ -45,7 +45,8 @@ class EkycController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        return $this->ok('Sesi eKYC dibuat.', $this->serialize($session), 201);
+        // Ambang skor ikut dikirim agar web/mobile bisa menampilkan lolos/tidak per pemeriksaan
+        return $this->ok('Sesi eKYC dibuat.', $this->serialize($session) + ['thresholds' => config('ekyc.thresholds')], 201);
     }
 
     /** Langkah 1 — OCR KTP. */

@@ -47,4 +47,22 @@ class EkycAiUnavailableTest extends TestCase
 
         $this->ocrRequest()->assertStatus(503)->assertJsonPath('success', false);
     }
+
+    public function test_ai_menolak_gambar_membalas_422_dengan_pesan_jelas(): void
+    {
+        Http::fake(['*' => Http::response(['error' => 'invalid_image', 'message' => 'Image is empty'], 422)]);
+
+        $this->ocrRequest()->assertStatus(422)
+            ->assertJsonPath('code', 'invalid_image')
+            ->assertJsonPath('message', 'Foto tidak dapat dibaca. Gunakan foto JPG/PNG yang jelas dan tidak terpotong.');
+    }
+
+    public function test_sesi_mengirim_ambang_skor(): void
+    {
+        $user = User::factory()->create(['status' => User::STATUS_PENDING]);
+        $this->withHeaders(['Authorization' => 'Bearer ' . JWTAuth::fromUser($user)])
+            ->postJson('/api/ekyc/session')
+            ->assertCreated()
+            ->assertJsonStructure(['data' => ['thresholds' => ['ocr', 'liveness', 'face_match', 'auto_approve', 'min_reject']]]);
+    }
 }
