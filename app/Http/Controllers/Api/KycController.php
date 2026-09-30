@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EkycResult;
+use App\Models\EkycSession;
 use App\Models\Kyc;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -150,6 +153,9 @@ class KycController extends Controller
             ], 400);
         }
 
+        // Verifikasi otomatis (eKYC) lolos → langsung disetujui tanpa antre review Ops
+        $autoApproved = $this->passedAutoEkyc($user, $request);
+
         // Simpan/update data KYC
         $kycData = array_merge($request->only([
             'nik', 'mother_maiden_name', 'birth_date', 'gender',
@@ -158,8 +164,11 @@ class KycController extends Controller
             'province', 'city', 'postal_code',
             'employment', 'additional_info',
         ]), [
-            'status'       => Kyc::STATUS_PENDING,
-            'submitted_at' => Carbon::now(),
+            'status'          => $autoApproved ? Kyc::STATUS_APPROVED : Kyc::STATUS_PENDING,
+            'submitted_at'    => Carbon::now(),
+            'reviewed_by'     => null,
+            'reviewed_at'     => $autoApproved ? Carbon::now() : null,
+            'rejected_reason' => null,
         ]);
 
         $kyc = Kyc::updateOrCreate(
@@ -167,13 +176,42 @@ class KycController extends Controller
             $kycData
         );
 
-        \App\Support\Notify::kycSubmitted($user);
+        $autoApproved
+            ? \App\Support\Notify::kycApproved($user, auto: true)
+            : \App\Support\Notify::kycSubmitted($user);
 
         return response()->json([
             'success' => true,
-            'message' => 'Data KYC berhasil disubmit. Tim kami akan memverifikasi dalam 1x24 jam.',
-            'data'    => $kyc,
+            'message' => $autoApproved
+                ? 'Verifikasi otomatis berhasil. Data Anda disetujui dan SID sedang diproses.'
+                : 'Data KYC berhasil disubmit. Tim kami akan memverifikasi dalam 1x24 jam.',
+            'data'    => array_merge($kyc->toArray(), ['auto_approved' => $autoApproved]),
         ], 201);
+    }
+
+    /**
+     * eKYC dianggap lolos otomatis bila sesi terakhir (24 jam) berkeputusan "approved"
+     * dan NIK serta tanggal lahir yang dikirim sama dengan hasil baca AI dari e-KTP.
+     */
+    private function passedAutoEkyc(User $user, Request $request): bool
+    {
+        $session = EkycSession::with(['document', 'result'])
+            ->where('user_id', $user->id)
+            ->where('completed_at', '>=', Carbon::now()->subDay())
+            ->latest('completed_at')
+            ->first();
+
+        if (! $session || ! $session->auto_approved || $session->result?->decision !== EkycResult::DECISION_APPROVED) {
+            return false;
+        }
+
+        $doc = $session->document;
+        if (! $doc || $doc->nik !== $request->input('nik')) {
+            return false;
+        }
+
+        return ! $doc->birth_date
+            || $doc->birth_date->toDateString() === Carbon::parse($request->input('birth_date'))->toDateString();
     }
 
     /**
@@ -194,11 +232,27 @@ class KycController extends Controller
             ]);
         }
 
+        // Hasil eKYC otomatis terakhir (skor AI) untuk halaman status nasabah
+        $result = EkycResult::whereIn('session_id',
+            EkycSession::where('user_id', $user->id)->pluck('id'))->latest()->first();
+
         return response()->json([
             'success' => true,
             'data'    => array_merge($kyc->toArray(), [
                 'ktp_url'    => $kyc->ktp_photo_path ? Storage::url($kyc->ktp_photo_path) : null,
                 'selfie_url' => $kyc->selfie_photo_path ? Storage::url($kyc->selfie_photo_path) : null,
+                'sid_status' => $user->sid_status,
+                'auto_approved' => $kyc->status === Kyc::STATUS_APPROVED && ! $kyc->reviewed_by && $result?->decision === EkycResult::DECISION_APPROVED,
+                'sid_number' => $user->sid_number,
+                'ekyc'       => $result ? [
+                    'ocr_score'        => $result->ocr_score,
+                    'liveness_score'   => $result->liveness_score,
+                    'face_match_score' => $result->face_match_score,
+                    'final_score'      => $result->final_score,
+                    'decision'         => $result->decision,
+                    'flags'            => $result->flags ?? [],
+                ] : null,
+                'thresholds' => config('ekyc.thresholds'),
             ]),
         ]);
     }

@@ -54,15 +54,17 @@ class Notify
         self::send($user, 'Pengajuan Pembukaan Rekening Diterima', [
             'Data pembukaan rekening Anda sudah kami terima dan sedang ditinjau oleh tim Operasional.',
             'Anda akan menerima email berikutnya setelah data disetujui dan Single Investor ID (SID) Anda diterbitkan.',
-        ], ['Status' => 'Menunggu verifikasi'], ['label' => 'Lihat Status', 'url' => self::url('/dashboard')]);
+        ], ['Status' => 'Menunggu verifikasi'], ['label' => 'Lihat Status', 'url' => self::url('/kyc')]);
     }
 
-    public static function kycApproved(User $user): void
+    public static function kycApproved(User $user, bool $auto = false): void
     {
         self::send($user, 'Data Pembukaan Rekening Disetujui', [
-            'Data pembukaan rekening Anda telah disetujui.',
+            $auto
+                ? 'Identitas Anda lolos verifikasi otomatis (eKYC) dan data pembukaan rekening Anda telah disetujui.'
+                : 'Data pembukaan rekening Anda telah disetujui.',
             'Tim kami sedang mendaftarkan data Anda ke KSEI (S-INVEST) untuk penerbitan Single Investor ID (SID) dan nomor rekening reksa dana (IFUA).',
-        ], ['Status' => 'Disetujui — menunggu SID'], ['label' => 'Lihat Status', 'url' => self::url('/dashboard')]);
+        ], ['Status' => 'Disetujui — menunggu SID'], ['label' => 'Lihat Status', 'url' => self::url('/kyc')]);
     }
 
     public static function kycRejected(User $user, string $reason): void
@@ -70,7 +72,7 @@ class Notify
         self::send($user, 'Data Pembukaan Rekening Perlu Diperbaiki', [
             'Mohon maaf, data pembukaan rekening Anda belum dapat kami setujui.',
             'Silakan perbaiki data sesuai catatan di bawah, lalu kirim ulang pengajuan.',
-        ], ['Alasan' => $reason], ['label' => 'Perbaiki Data', 'url' => self::url('/pembukaan-rekening/ekyc')]);
+        ], ['Alasan' => $reason], ['label' => 'Perbaiki Data', 'url' => self::url('/kyc')]);
     }
 
     public static function sidIssued(User $user): void
